@@ -180,7 +180,7 @@ export default function Home() {
         <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Input Section */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-2xl font-semibold mb-4">תוכן</h2>
+            <h2 className="text-2xl font-semibold mb-4">מחולל הכתבות</h2>
             
             <div className="mb-4">
               <label className="block mb-2">כותרת הכתבה</label>
@@ -188,7 +188,7 @@ export default function Home() {
             </div>
 
             <div className="mb-4">
-                <label className="block mb-2">Content</label>
+                <label className="block mb-2">תוכן הכתבה</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                     <button onClick={() => addBbCode('[B]', '[/B]')} className="bg-gray-600 px-3 py-1 rounded">Bold</button>
                     <button onClick={() => addBbCode('[I]', '[/I]')} className="bg-gray-600 px-3 py-1 rounded">Italic</button>
