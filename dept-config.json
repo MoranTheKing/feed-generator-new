@@ -1,0 +1,26 @@
+{
+    "feed": {
+        "workspaceId": "10553",
+        "relevantLinkEnabled": true,
+        "relevantArticlesEnabled": false,
+        "deptColor": "3366cc",
+        "deptSecondColor": "63bcf5",
+        "deptLogo": "https://i.imgur.com/CL7EMPw.png",
+        "relevantForumEnabled": true,
+        "sourceEnabled": true,
+        "mediaEnabled": true,
+        "enabled": true
+    },
+    "eruhim": {
+        "workspaceId": "10577",
+        "relevantLinkEnabled": true,
+        "relevantArticlesEnabled": false,
+        "deptColor": "999900",
+        "deptSecondColor": "63bcf5",
+        "deptLogo": "https://i.imgur.com/CL7EMPw.png",
+        "relevantForumEnabled": true,
+        "sourceEnabled": true,
+        "mediaEnabled": true,
+        "enabled": true
+    }
+}
