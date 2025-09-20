@@ -1,8 +1,11 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import depts from "public/dept-config.json";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-// --- קומפוננטת עורך BBCode לשימוש חוזר ---
+// --- קומפוננטת עורך BBCode (ללא שינוי) ---
 const BbCodeEditor = ({ content, setContent }) => {
     const contentRef = useRef(null);
     const [editorColor, setEditorColor] = useState('#000000');
@@ -74,49 +77,105 @@ const BbCodeEditor = ({ content, setContent }) => {
 };
 
 
+// --- קומפוננטה לפריט שניתן לגרירה ---
+const SortableItem = ({ item, children }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            {children}
+        </div>
+    );
+};
+
+// --- קומפוננטה ראשית למחולל ---
 export default function EruhimGenerator() {
     const [guestName, setGuestName] = useState('');
     const [guestTopic, setGuestTopic] = useState('');
     const [biography, setBiography] = useState('');
-    const [qnaList, setQnaList] = useState([{ id: 1, question: '', answer: '' }]);
+    const [blocks, setBlocks] = useState([{ id: 1, type: 'qna', question: '', answer: '' }]);
     const [generatedHtml, setGeneratedHtml] = useState('');
     const [generatedBBcode, setBBcode] = useState('');
     const [previewContent, setPreviewContent] = useState('');
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 5 },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     useEffect(() => {
         const generateOutputs = async () => {
             const deptConfig = depts["eruhim"];
             if (!deptConfig) return;
 
-            // --- Generate Q&A Blocks ---
+            // --- Generate Content Blocks ---
             let qnaHtmlBlock = '';
             let qnaBbcodeBlock = '';
+            let questionCounter = 0;
 
+            // --- THIS IS THE RESTORED/FIXED LOGIC FOR HTML Q&A ---
             if (deptConfig.qatemplate) {
                 try {
                     const qaTemplateResponse = await fetch(deptConfig.qatemplate);
-                    if (!qaTemplateResponse.ok) throw new Error();
+                    if (!qaTemplateResponse.ok) throw new Error('קובץ תבנית QA ל-HTML לא נמצא');
                     const qaTemplateText = await qaTemplateResponse.text();
-                    qnaHtmlBlock = qnaList.map(item => qaTemplateText.replace(/%Question%/g, item.question).replace(/%Answer%/g, item.answer.replace(/\n/g, '<br />'))).join('');
+                    
+                    qnaHtmlBlock = blocks.map(block => {
+                        if (block.type === 'qna') {
+                            questionCounter++;
+                            return qaTemplateText
+                                .replace(/%Question%/g, `שאלה ${questionCounter}: ${block.question}`)
+                                .replace(/%Answer%/g, block.answer.replace(/\n/g, '<br />'));
+                        }
+                        if (block.type === 'image') {
+                            return `<img src="${block.url}" style="max-width: 100%; margin: 15px auto; display: block;" />`;
+                        }
+                        return '';
+                    }).join('');
                 } catch (e) {
-                    qnaHtmlBlock = '<p style="color:red;">שגיאה: לא נמצאה תבנית לשאלות ותשובות (HTML).</p>';
+                    qnaHtmlBlock = `<p style="color:red;">שגיאה: ${e.message}</p>`;
                 }
             }
             
-            console.log(deptConfig.qabbcodeTemp);
+            // --- THIS IS THE RESTORED/FIXED LOGIC FOR BBCODE Q&A ---
+            questionCounter = 0;
             if (deptConfig.qabbcodeTemp) {
-                try {
-                    const qaBbcodeTemplateResponse = await fetch(deptConfig.qabbcodeTemp);
-                    if (!qaBbcodeTemplateResponse.ok) throw new Error();
+                 try {
+                    const qaBbcodeTemplateResponse = await fetch(deptConfig.qaBbcodeTemplate);
+                    if (!qaBbcodeTemplateResponse.ok) throw new Error('קובץ תבנית QA ל-BBCODE לא נמצא');
                     const qaBbcodeTemplateText = await qaBbcodeTemplateResponse.text();
-                    qnaBbcodeBlock = qnaList.map(item => qaBbcodeTemplateText
-                        .replace("%question%", item.question).replace("%answer%", item.answer)).join('\n\n');
+
+                    qnaBbcodeBlock = blocks.map(block => {
+                        if (block.type === 'qna') {
+                            questionCounter++;
+                            return qaBbcodeTemplateText
+                                .replace(/%Question%/g, `שאלה ${questionCounter}: ${block.question}`)
+                                .replace(/%Answer%/g, block.answer);
+                        }
+                        if (block.type === 'image') {
+                            return `[IMG]${block.url}[/IMG]`;
+                        }
+                        return '';
+                    }).join('\n\n');
                 } catch (e) {
-                    qnaBbcodeBlock = 'שגיאה: לא נמצאה תבנית לשאלות ותשובות (BBCODE).';
+                    qnaBbcodeBlock = `שגיאה: ${e.message}`;
                 }
             }
 
-            // --- Generate HTML for Preview ---
+            // --- Generate Final HTML ---
             if (deptConfig.templateFile) {
                 try {
                     const htmlResponse = await fetch(deptConfig.templateFile);
@@ -129,39 +188,48 @@ export default function EruhimGenerator() {
                     setGeneratedHtml(`שגיאה ביצירת HTML: ${error.message}`);
                     setPreviewContent(`<p style="color:red;">${error.message}</p>`);
                 }
-            } else {
-                 setGeneratedHtml('לא הוגדרה תבנית HTML בקונפיג');
-                 setPreviewContent('<p>לא הוגדרה תבנית HTML בקונפיג</p>');
-            }
+            } else { setGeneratedHtml('לא הוגדרה תבנית HTML בקונפיג'); setPreviewContent('<p>לא הוגדרה תבנית HTML בקונפיג</p>'); }
 
-            // --- Generate BBCode ---
+            // --- Generate Final BBCode ---
             if (deptConfig.bbcodeTemplateFile) {
                 try {
                     const bbcodeResponse = await fetch(deptConfig.bbcodeTemplateFile);
                     if (!bbcodeResponse.ok) throw new Error(`לא נמצא קובץ תבנית BBCODE`);
                     let bbcodeTemplate = await bbcodeResponse.text();
-                    bbcodeTemplate = bbcodeTemplate.replace(/{שם המתארח}/g, guestName).replace(/{עיסוק\/תחום עניין}/g, guestTopic).replace(/{ביוגרפיה}/g, biography).replace("{QNA_BLOCK}", qnaBbcodeBlock);
+                    bbcodeTemplate = bbcodeTemplate.replace(/{שם המתארח}/g, guestName).replace(/{עיסוק\/תחום עניין}/g, guestTopic).replace(/{ביוגרפיה}/g, biography).replace(/{QNA_BLOCK}/g, qnaBbcodeBlock);
                     setBBcode(bbcodeTemplate);
                 } catch (error) {
                     setBBcode(`שגיאה ביצירת BBCODE: ${error.message}`);
                 }
-            } else {
-                setBBcode('לא הוגדרה תבנית BBCODE בקונפיג');
-            }
+            } else { setBBcode('לא הוגדרה תבנית BBCODE בקונפיג'); }
         };
 
         generateOutputs();
-    }, [guestName, guestTopic, biography, qnaList]);
+    }, [guestName, guestTopic, biography, blocks]);
     
-    const handleQnaChange = (id, field, value) => {
-        setQnaList(qnaList.map(item => item.id === id ? { ...item, [field]: value } : item));
+    const handleBlockChange = (id, field, value) => {
+        setBlocks(blocks.map(block => block.id === id ? { ...block, [field]: value } : block));
     };
-    const addQuestion = () => {
-        const newId = qnaList.length > 0 ? Math.max(...qnaList.map(i => i.id)) + 1 : 1;
-        setQnaList([...qnaList, { id: newId, question: '', answer: '' }]);
+    const addBlock = (type) => {
+        const newId = blocks.length > 0 ? Math.max(...blocks.map(b => b.id)) + 1 : 1;
+        if (type === 'qna') setBlocks([...blocks, { id: newId, type: 'qna', question: '', answer: '' }]);
+        if (type === 'image') setBlocks([...blocks, { id: newId, type: 'image', url: '' }]);
     };
-    const removeQuestion = (id) => {
-        setQnaList(qnaList.filter(item => item.id !== id));
+    const removeBlock = (id) => {
+        setBlocks(blocks.filter(block => block.id !== id));
+    };
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (event.activatorEvent.target.tagName === "TEXTAREA" || event.activatorEvent.target.tagName === "INPUT" || event.activatorEvent.target.tagName === "BUTTON") {
+            return;
+        }
+        if (active.id !== over.id) {
+            setBlocks((items) => {
+                const oldIndex = items.findIndex(item => item.id === active.id);
+                const newIndex = items.findIndex(item => item.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
     };
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text.trim()).then(() => alert('הקוד הועתק!'));
@@ -179,29 +247,46 @@ export default function EruhimGenerator() {
                         <div><label className="block mb-2">תחום האירוח</label><input type="text" value={guestTopic} onChange={(e) => setGuestTopic(e.target.value)} className="w-full p-2 bg-gray-700 rounded" /></div>
                         <div><label className="block mb-2">ביוגרפיה</label><BbCodeEditor content={biography} setContent={setBiography} /></div>
                         <hr className="border-gray-600 my-4" />
-                        <h3 className="text-xl font-semibold">שאלות ותשובות</h3>
-                        {qnaList.map((item, index) => (
-                            <div key={item.id} className="bg-gray-700 p-4 rounded-lg space-y-2 relative">
-                                <label className="block text-sm">שאלה {index + 1}</label>
-                                <textarea value={item.question} onChange={(e) => handleQnaChange(item.id, 'question', e.target.value)} className="w-full p-2 bg-gray-600 rounded h-20" />
-                                <label className="block text-sm">תשובה {index + 1}</label>
-                                <textarea value={item.answer} onChange={(e) => handleQnaChange(item.id, 'answer', e.target.value)} className="w-full p-2 bg-gray-600 rounded h-24" />
-                                {qnaList.length > 1 && (<button onClick={() => removeQuestion(item.id)} className="absolute top-2 right-2 text-red-500 hover:text-red-400 font-bold p-1 leading-none">&#x2715;</button>)}
-                            </div>
-                        ))}
-                        <button onClick={addQuestion} className="w-full bg-blue-600 px-4 py-2 rounded">הוסף שאלה ותשובה</button>
+                        <h3 className="text-xl font-semibold">תוכן הריאיון</h3>
+                        {isClient && (
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext items={blocks} strategy={verticalListSortingStrategy}>
+                                    {blocks.map((block, index) => {
+                                        const questionNumber = blocks.slice(0, index + 1).filter(b => b.type === 'qna').length;
+                                        return (
+                                            <SortableItem key={block.id} item={block}>
+                                                <div className="bg-gray-700 p-4 rounded-lg space-y-2 relative mb-4 cursor-grab">
+                                                    <button onClick={() => removeBlock(block.id)} className="absolute top-2 right-2 text-red-500 hover:text-red-400 font-bold p-1 leading-none">&#x2715;</button>
+                                                    {block.type === 'qna' && (
+                                                        <>
+                                                            <label className="block text-sm font-bold">שאלה {questionNumber}</label>
+                                                            <textarea value={block.question} onChange={(e) => handleBlockChange(block.id, 'question', e.target.value)} placeholder="כתוב כאן את השאלה" className="w-full p-2 bg-gray-600 rounded h-20" />
+                                                            <label className="block text-sm">תשובה</label>
+                                                            <textarea value={block.answer} onChange={(e) => handleBlockChange(block.id, 'answer', e.target.value)} placeholder="כתוב כאן את התשובה" className="w-full p-2 bg-gray-600 rounded h-24" />
+                                                        </>
+                                                    )}
+                                                    {block.type === 'image' && (
+                                                        <>
+                                                            <label className="block text-sm font-bold">תמונה</label>
+                                                            <input type="text" value={block.url} onChange={(e) => handleBlockChange(block.id, 'url', e.target.value)} placeholder="הדבק קישור לתמונה" className="w-full p-2 bg-gray-600 rounded" />
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </SortableItem>
+                                        );
+                                    })}
+                                </SortableContext>
+                            </DndContext>
+                        )}
+                        <div className="flex gap-4">
+                            <button onClick={() => addBlock('qna')} className="w-full bg-blue-600 px-4 py-2 rounded">הוסף שאלה</button>
+                            <button onClick={() => addBlock('image')} className="w-full bg-teal-600 px-4 py-2 rounded">הוסף תמונה</button>
+                        </div>
                     </div>
                     {/* Preview and Output Section */}
                     <div className="bg-gray-800 p-6 rounded-lg space-y-4">
-                        <div>
-                            <h2 className="text-2xl font-semibold mb-2">תצוגה מקדימה (HTML)</h2>
-                            <div className="w-full bg-white text-black p-4 rounded-lg h-80 overflow-y-auto" dangerouslySetInnerHTML={{ __html: previewContent }}></div>
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-semibold mb-2">Generated BBCODE</h2>
-                            <textarea readOnly value={generatedBBcode} className="w-full p-2 bg-gray-700 rounded h-32 mb-2" />
-                            <button onClick={() => copyToClipboard(generatedBBcode)} className="w-full bg-purple-600 px-4 py-2 rounded">העתק קוד BBCODE</button>
-                        </div>
+                        <div><h2 className="text-2xl font-semibold mb-2">תצוגה מקדימה (HTML)</h2><div className="w-full bg-white text-black p-4 rounded-lg h-80 overflow-y-auto" dangerouslySetInnerHTML={{ __html: previewContent }}></div></div>
+                        <div><h2 className="text-2xl font-semibold mb-2">Generated BBCODE</h2><textarea readOnly value={generatedBBcode} className="w-full p-2 bg-gray-700 rounded h-32 mb-2" /><button onClick={() => copyToClipboard(generatedBBcode)} className="w-full bg-purple-600 px-4 py-2 rounded">העתק קוד BBCODE</button></div>
                     </div>
                 </div>
             </div>

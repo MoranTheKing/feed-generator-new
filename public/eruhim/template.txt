@@ -20,10 +20,6 @@
             {ביוגרפיה}
         </div>
 
-        <div style="margin: 20px 0;">
-            {תמונה}
-        </div>
-
         {QNA_BLOCK}
         
         <img src="https://images.weserv.nl/?url=i.imgur.com%2FBP1U0yb.png" style="margin: 20px 0;">
