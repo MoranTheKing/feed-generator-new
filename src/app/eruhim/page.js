@@ -88,64 +88,71 @@ export default function EruhimGenerator() {
             const deptConfig = depts["eruhim"];
             if (!deptConfig) return;
 
-            // --- THIS IS THE MODIFIED PART ---
-            const qnaHtmlBlock = qnaList.map(async item => {
-                const qatemp = await fetch(deptConfig.qatemplate);
-                if (!qatemp.ok) throw new Error(`לא נמצא קובץ תבנית HTML`);
+            // --- Generate Q&A Blocks ---
+            let qnaHtmlBlock = '';
+            let qnaBbcodeBlock = '';
 
-                let qaHtmlTemp = await qatemp.text();
-
-                qaHtmlTemp.replace("%Question%", item.question);
-                qaHtmlTemp.replace("%Answer%", item.answer);
-            }).join('');
-
-            const qnaBbcodeBlock = qnaList.map(item =>
-                `[TABLE="width: 900, align: center"]
-[TR="bgcolor: #999900"]
-[TD="align: center"][B][COLOR=white]${item.question}[/COLOR][/B][/TD]
-[/TR]
-[TR]
-[TD="align: right"]${item.answer}[/TD]
-[/TR]
-[/TABLE]`
-            ).join('\n\n');
-            // --- END OF MODIFIED PART ---
-
-            try {
-                const response = await fetch(deptConfig.templateFile);
-                if (!response.ok) throw new Error(`לא נמצא קובץ תבנית HTML`);
-
-                let htmlTemplate = await response.text();
-                htmlTemplate = htmlTemplate.replace(/{שם המתארח}/g, guestName);
-                htmlTemplate = htmlTemplate.replace(/{עיסוק\/תחום עניין}/g, guestTopic);
-                htmlTemplate = htmlTemplate.replace(/{ביוגרפיה}/g, biography.replace(/\n/g, '<br />'));
-                htmlTemplate = htmlTemplate.replace(/{QNA_BLOCK}/g, qnaHtmlBlock);
-
-                setGeneratedHtml(htmlTemplate);
-                setPreviewContent(htmlTemplate);
-            } catch (error) {
-                setPreviewContent(`<p style="color:red;">${error.message}</p>`);
+            if (deptConfig.qatemplate) {
+                try {
+                    const qaTemplateResponse = await fetch(deptConfig.qatemplate);
+                    if (!qaTemplateResponse.ok) throw new Error();
+                    const qaTemplateText = await qaTemplateResponse.text();
+                    qnaHtmlBlock = qnaList.map(item => qaTemplateText.replace(/%Question%/g, item.question).replace(/%Answer%/g, item.answer.replace(/\n/g, '<br />'))).join('');
+                } catch (e) {
+                    qnaHtmlBlock = '<p style="color:red;">שגיאה: לא נמצאה תבנית לשאלות ותשובות (HTML).</p>';
+                }
+            }
+            
+            console.log(deptConfig.qabbcodeTemp);
+            if (deptConfig.qabbcodeTemp) {
+                try {
+                    const qaBbcodeTemplateResponse = await fetch(deptConfig.qabbcodeTemp);
+                    if (!qaBbcodeTemplateResponse.ok) throw new Error();
+                    const qaBbcodeTemplateText = await qaBbcodeTemplateResponse.text();
+                    qnaBbcodeBlock = qnaList.map(item => qaBbcodeTemplateText
+                        .replace("%question%", item.question).replace("%answer%", item.answer)).join('\n\n');
+                } catch (e) {
+                    qnaBbcodeBlock = 'שגיאה: לא נמצאה תבנית לשאלות ותשובות (BBCODE).';
+                }
             }
 
-            try {
-                const response = await fetch(deptConfig.bbcodeTemplateFile);
-                if (!response.ok) throw new Error(`לא נמצא קובץ תבנית BBCODE`);
+            // --- Generate HTML for Preview ---
+            if (deptConfig.templateFile) {
+                try {
+                    const htmlResponse = await fetch(deptConfig.templateFile);
+                    if (!htmlResponse.ok) throw new Error(`לא נמצא קובץ תבנית HTML`);
+                    let htmlTemplate = await htmlResponse.text();
+                    htmlTemplate = htmlTemplate.replace(/{שם המתארח}/g, guestName).replace(/{עיסוק\/תחום עניין}/g, guestTopic).replace(/{ביוגרפיה}/g, biography.replace(/\n/g, '<br />')).replace(/{QNA_BLOCK}/g, qnaHtmlBlock);
+                    setGeneratedHtml(htmlTemplate);
+                    setPreviewContent(htmlTemplate);
+                } catch (error) {
+                    setGeneratedHtml(`שגיאה ביצירת HTML: ${error.message}`);
+                    setPreviewContent(`<p style="color:red;">${error.message}</p>`);
+                }
+            } else {
+                 setGeneratedHtml('לא הוגדרה תבנית HTML בקונפיג');
+                 setPreviewContent('<p>לא הוגדרה תבנית HTML בקונפיג</p>');
+            }
 
-                let bbcodeTemplate = await response.text();
-                bbcodeTemplate = bbcodeTemplate.replace(/{שם המתארח}/g, guestName);
-                bbcodeTemplate = bbcodeTemplate.replace(/{עיסוק\/תחום עניין}/g, guestTopic);
-                bbcodeTemplate = bbcodeTemplate.replace(/{ביוגרפיה}/g, biography);
-                bbcodeTemplate = bbcodeTemplate.replace(/{QNA_BLOCK}/g, qnaBbcodeBlock);
-
-                setBBcode(bbcodeTemplate);
-            } catch (error) {
-                setBBcode(error.message);
+            // --- Generate BBCode ---
+            if (deptConfig.bbcodeTemplateFile) {
+                try {
+                    const bbcodeResponse = await fetch(deptConfig.bbcodeTemplateFile);
+                    if (!bbcodeResponse.ok) throw new Error(`לא נמצא קובץ תבנית BBCODE`);
+                    let bbcodeTemplate = await bbcodeResponse.text();
+                    bbcodeTemplate = bbcodeTemplate.replace(/{שם המתארח}/g, guestName).replace(/{עיסוק\/תחום עניין}/g, guestTopic).replace(/{ביוגרפיה}/g, biography).replace("{QNA_BLOCK}", qnaBbcodeBlock);
+                    setBBcode(bbcodeTemplate);
+                } catch (error) {
+                    setBBcode(`שגיאה ביצירת BBCODE: ${error.message}`);
+                }
+            } else {
+                setBBcode('לא הוגדרה תבנית BBCODE בקונפיג');
             }
         };
 
         generateOutputs();
     }, [guestName, guestTopic, biography, qnaList]);
-
+    
     const handleQnaChange = (id, field, value) => {
         setQnaList(qnaList.map(item => item.id === id ? { ...item, [field]: value } : item));
     };

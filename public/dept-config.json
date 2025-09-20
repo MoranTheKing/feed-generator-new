@@ -23,6 +23,8 @@
         "mediaEnabled": true,
         "enabled": true,
         "templateFile": "/eruhim/template.txt",
-        "qatemplate": "/eruhim/qa-template.txt"
+        "qatemplate": "/eruhim/qa-template.txt",
+        "bbcodeTemplateFile": "eruhim/bbcode.bb",
+        "qabbcodeTemp": "eruhim/qa-bbcode.bb"
     }
 }

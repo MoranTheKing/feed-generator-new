@@ -1,6 +1,6 @@
 <div class="previewDiv">
     <center>
-        <img src="https://images.weserv.nl/?url=i.imgur.com/Oc5rHsm.png" alt="Header Banner" style="margin-bottom: 20px;">
+        <img src="https://i.imagesup.co/images2/2cc2f7f0c80b9e5a165104325e07bbbc45c2c66d.png" alt="Header Banner" style="margin-bottom: 20px;">
 
         <span style="color:#999900;" class="ArticleTitle">ריאיון עם {שם המתארח}</span>
         
