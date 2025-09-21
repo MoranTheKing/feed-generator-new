@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import depts from "public/dept-config.json";
+import depts from 'public/dept-config.json';
+import BackButtons from "../BackButtons";
 
 // Helper function to process the media link
 // פונקציה לעיבוד בלוקים מותנים בתבנית BBCODE
@@ -55,12 +55,7 @@ function ArticleGeneratorComponent() {
     const handleThreadChange = (idx, field, value) => {
         setThreads(prev => prev.map((thread, i) => i === idx ? { ...thread, [field]: value } : thread));
     };
-    const router = useRouter();
-    const searchParams = useSearchParams();
-
-    // --- State for the selected department ---
-    const [dept, setDept] = useState('feed');
-
+    const contentRef = useRef(null);
     // --- State variables for the form fields ---
     const [title, setTitle] = useState(''); // %ArticleTitle%
     const [imageLink, setImageLink] = useState(''); // %ImageLink%
@@ -73,27 +68,9 @@ function ArticleGeneratorComponent() {
     const [generatedHtml, setGeneratedHtml] = useState('');
     const [generatedBBcode, setBBcode] = useState(''); // Your new state for BBCode
     const [previewContent, setPreviewContent] = useState('');
-    const contentRef = useRef(null);
-    // ...existing code...
     const [editorColor, setEditorColor] = useState('#000000');
     const [editorSize, setEditorSize] = useState(3);
 
-    // Effect to sync department state with URL parameter
-    useEffect(() => {
-        const deptFromUrl = searchParams.get('dept');
-        if (deptFromUrl && depts[deptFromUrl]) {
-            setDept(deptFromUrl);
-        } else {
-            setDept('feed');
-        }
-    }, [searchParams]);
-
-    // Function to handle department change
-    const handleDeptChange = (newDept) => {
-        setDept(newDept);
-        router.push(`?dept=${newDept}`, { scroll: false });
-    };
-    // ...existing code...
     // --- BBCode editor functions (unchanged) ---
     const applyBbCode = (tag, value, customText = null) => {
         const textarea = contentRef.current;
@@ -136,9 +113,12 @@ function ArticleGeneratorComponent() {
 
     // --- Main Generation Logic for both HTML and BBCode ---
     useEffect(() => {
+        const deptConfig = depts.feed;
+        if (!deptConfig) return;
+
         const generateOutputs = async () => {
-            const deptConfig = depts[dept];
-            if (!deptConfig) return;
+            // const deptConfig = depts[dept];
+            // if (!deptConfig) return;
 
             const media = processMediaLink(imageLink);
 
@@ -244,7 +224,7 @@ function ArticleGeneratorComponent() {
         };
 
         generateOutputs();
-    }, [dept, title, imageLink, content, relevantLinkDesc, relevantLink, source, forumName, threads]);
+    }, [title, imageLink, content, relevantLinkDesc, relevantLink, source, forumName, threads]);
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text.trim()).then(() => {
@@ -255,15 +235,12 @@ function ArticleGeneratorComponent() {
     return (
         <main className="flex min-h-screen flex-col items-center justify-between p-8 bg-gray-900 text-white">
             <div className="z-10 w-full max-w-7xl items-center justify-between font-mono text-sm lg:flex flex-col">
+                <BackButtons />
                 <h1 className="text-4xl font-bold mb-4">מחולל כתבות</h1>
-                <div className="mb-8 flex justify-center gap-4">
-                    <button onClick={() => handleDeptChange('feed')} className={`px-6 py-2 rounded-lg ${dept === 'feed' ? 'bg-blue-600' : 'bg-gray-700'}`}>פיד</button>
-                    <button onClick={() => handleDeptChange('eruhim')} className={`px-6 py-2 rounded-lg ${dept === 'eruhim' ? 'bg-blue-600' : 'bg-gray-700'}`}>אירוחים</button>
-                </div>
                 <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Input Section */}
                     <div className="bg-gray-800 p-6 rounded-lg space-y-4 w-full max-w-6xl mx-auto overflow-x-auto">
-                        <h2 className="text-2xl font-semibold mb-4">מחולל הכתבות ({dept})</h2>
+                        <h2 className="text-2xl font-semibold mb-4">מחולל הכתבות</h2>
                         <div><label className="block mb-2">כותרת הכתבה</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full p-2 bg-gray-700 rounded" /></div>
                         {/* --- UPDATED MEDIA LINK FIELD --- */}
                         <div>

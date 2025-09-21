@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import depts from "public/dept-config.json";
+import BackButtons from "../../BackButtons";
 
 // קומפוננטת עורך BBCode
 const BbCodeEditor = ({ content, setContent }) => {
@@ -80,6 +81,7 @@ export default function SuggestGuestPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-8 bg-gray-900 text-white">
       <div className="z-10 w-full max-w-7xl items-center justify-between font-mono text-sm lg:flex flex-col">
+        <BackButtons />
         <h1 className="text-4xl font-bold mb-8">הצעת אירוח לצוות</h1>
         <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* טופס */}

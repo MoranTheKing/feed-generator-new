@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import BackButtons from '../BackButtons';
 
 export default function EruhimHome() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gray-900 text-white">
       <div className="max-w-xl w-full bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-8 items-center">
+        <BackButtons />
         <h1 className="text-4xl font-bold mb-4">מרכז האירוחים</h1>
         <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>

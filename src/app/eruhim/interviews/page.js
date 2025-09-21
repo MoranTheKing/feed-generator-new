@@ -4,6 +4,7 @@ import depts from "public/dept-config.json";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import BackButtons from "../../BackButtons";
 
 // --- קומפוננטת עורך BBCode (ללא שינוי) ---
 const BbCodeEditor = ({ content, setContent }) => {
@@ -238,6 +239,7 @@ export default function EruhimGenerator() {
     return (
         <main className="flex min-h-screen flex-col items-center justify-between p-8 bg-gray-900 text-white">
             <div className="z-10 w-full max-w-7xl items-center justify-between font-mono text-sm lg:flex flex-col">
+                <BackButtons />
                 <h1 className="text-4xl font-bold mb-8">מחולל אירוחים</h1>
                 <div className="mb-6">
                 </div>
