@@ -26,9 +26,17 @@ export default function RootLayout({ children }) {
         <style>{`body { font-family: 'Open Sans', 'Open Sans Hebrew', Arial, sans-serif !important; }`}</style>
       </Head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-black`}
       >
-        {children}
+        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
+        <footer className="w-full text-center py-6 bg-gray-800 text-gray-300 text-lg mt-auto">
+          קרדיט:
+          <a href="https://www.fxp.co.il/member.php?u=159073" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline mx-2">RemixN1V</a>
+          &amp;
+          <a href="https://www.fxp.co.il/member.php?u=1013527" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline mx-2">ModerniMan</a>
+        </footer>
       </body>
     </html>
   );
