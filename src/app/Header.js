@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 export default function Header() {
   const pathname = usePathname();
   const isPanel = pathname.startsWith("/panel");
@@ -19,7 +20,16 @@ export default function Header() {
       {/* לוגו ממורכז בדיוק כמו התוכן */}
       <div className="max-w-xl mx-auto w-full flex justify-center items-center">
         <Link href="/">
-          <img src="https://i.imagesup.co/images2/975accc8c23cb6943f3c828996d66e2a5fb0e09c.png" alt="Logo" className="h-28 w-auto mx-auto" style={{maxHeight:112}} />
+          <Image
+            src="https://i.imagesup.co/images2/975accc8c23cb6943f3c828996d66e2a5fb0e09c.png"
+            alt="Logo"
+            width={300}
+            height={112}
+            className="h-28 w-auto mx-auto"
+            style={{maxHeight:112}}
+            priority
+            unoptimized
+          />
         </Link>
       </div>
     </header>
