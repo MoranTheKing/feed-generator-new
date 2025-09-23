@@ -16,6 +16,7 @@ export default function AccessLayout({ children }) {
       .then((res) => res.json())
       .then((data) => {
         const found = data.find((item) => item.code === code);
+        console.log(found);
         if (found && (found.panels.includes("admin") || found.panels.includes("leader"))) {
           setAllowed(true);
         } else {

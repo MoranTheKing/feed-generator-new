@@ -1,6 +1,5 @@
 "use client";
 import { useState } from 'react';
-import { getPanelsForCode, getRoleForCode } from '../access';
 import { useRouter } from 'next/navigation';
 
 export default function PanelLogin() {
@@ -8,14 +7,22 @@ export default function PanelLogin() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const panels = getPanelsForCode(code);
-    if (panels.length > 0) {
-      sessionStorage.setItem('panelCode', code);
-      router.push('/panel');
-    } else {
-      setError('קוד לא תקין');
+    setError('');
+    try {
+      const res = await fetch('/api/panel/get-access');
+      const data = await res.json();
+      const found = data.find(item => item.code === code);
+      const panels = found ? found.panels : [];
+      if (panels && panels.length > 0) {
+        sessionStorage.setItem('panelCode', code);
+        router.push('/panel');
+      } else {
+        setError('קוד לא תקין');
+      }
+    } catch (err) {
+      setError('שגיאה בשרת');
     }
   };
 

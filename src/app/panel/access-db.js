@@ -3,18 +3,34 @@ import pool from './db.js';
 
 export async function getAccessList() {
   const [rows] = await pool.query('SELECT * FROM access_codes');
-  return rows.map(row => ({
-    code: row.code,
-    role: row.role,
-    panels: JSON.parse(row.panels),
-    editableByLeader: !!row.editableByLeader
-  }));
+  return rows.map(row => {
+    let panels;
+    try {
+      panels = JSON.parse(row.panels);
+    } catch (e) {
+      // If not valid JSON, treat as single string value
+      panels = [row.panels];
+    }
+    return {
+      code: row.code,
+      role: row.role,
+      panels,
+      editableByLeader: !!row.editableByLeader
+    };
+  });
 }
+
 
 export async function getPanelsForCode(code) {
   const [rows] = await pool.query('SELECT panels FROM access_codes WHERE code = ?', [code]);
   if (rows.length === 0) return [];
-  return JSON.parse(rows[0].panels);
+  let panels;
+  try {
+    panels = JSON.parse(rows[0].panels);
+  } catch (e) {
+    panels = [rows[0].panels];
+  }
+  return panels;
 }
 
 export async function getRoleForCode(code) {

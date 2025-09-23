@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { getPanelsForCode, getRoleForCode } from './access';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -22,8 +21,18 @@ export default function PanelHome() {
       router.push('/panel/login');
       return;
     }
-    setAllowedPanels(getPanelsForCode(code));
-    setRole(getRoleForCode(code));
+    (async () => {
+      try {
+        const res = await fetch('/api/panel/get-access');
+        const data = await res.json();
+        const found = data.find(item => item.code === code);
+        setAllowedPanels(found && found.panels ? found.panels : []);
+        setRole(found && found.role ? found.role : '');
+      } catch (err) {
+        setAllowedPanels([]);
+        setRole('');
+      }
+    })();
   }, [router]);
 
   return (
