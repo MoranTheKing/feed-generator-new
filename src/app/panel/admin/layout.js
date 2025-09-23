@@ -7,21 +7,41 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    const code = sessionStorage.getItem("panelCode");
-    if (!code) {
-      router.push("/panel/login");
-      return;
-    }
-    fetch("/api/panel/get-access")
-      .then((res) => res.json())
-      .then((data) => {
-        const found = data.find((item) => item.code === code);
+    const checkAccess = async () => {
+      const code = sessionStorage.getItem("panelCode");
+      if (!code) {
+        setAllowed(false);
+        router.push("/panel/login");
+        return;
+      }
+      try {
+        const res = await fetch("/api/panel/get-access");
+        const data = await res.json();
+        const found = Array.isArray(data) ? data.find((item) => item.code === code) : null;
         if (found && found.panels.includes("admin")) {
           setAllowed(true);
         } else {
           setAllowed(false);
+          router.push("/panel/login");
         }
-      });
+      } catch {
+        setAllowed(false);
+        router.push("/panel/login");
+      }
+    };
+
+    checkAccess();
+
+    const handleFocus = () => checkAccess();
+    const handleStorage = (e) => {
+      if (e.key === "panelCode") checkAccess();
+    };
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, [router]);
 
   if (allowed === null) {
