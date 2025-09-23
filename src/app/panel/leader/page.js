@@ -9,13 +9,23 @@ export default function LeaderPanel() {
   useEffect(() => {
     const code = sessionStorage.getItem('panelCode');
     if (!code) return;
-    fetch('/api/panel/get-access')
-      .then(res => res.json())
-      .then(data => {
+    (async () => {
+      try {
+        const res = await fetch('/api/panel/get-access');
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          setAllowedPanels([]);
+          setRole('');
+          return;
+        }
         const found = data.find(item => item.code === code);
-        setAllowedPanels(found ? found.panels : []);
-        setRole(found ? found.role : '');
-      });
+        setAllowedPanels(found && found.panels ? found.panels : []);
+        setRole(found && found.role ? found.role : '');
+      } catch (err) {
+        setAllowedPanels([]);
+        setRole('');
+      }
+    })();
   }, []);
 
   return (

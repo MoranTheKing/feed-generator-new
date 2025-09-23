@@ -14,16 +14,28 @@ export default function AdminPanel() {
       router.push('/panel/login');
       return;
     }
-    fetch('/api/panel/get-access')
-      .then(res => res.json())
-      .then(data => {
-        const found = data.find(item => item.code === code);
-        setAllowedPanels(found ? found.panels : []);
-        setRole(found ? found.role : '');
-        if (!(found && (found.panels.includes('admin')))) {
-          router.push('/panel/home');
+    (async () => {
+      try {
+        const res = await fetch('/api/panel/get-access');
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          setAllowedPanels([]);
+          setRole('');
+          router.push('/panel/login');
+          return;
         }
-      });
+        const found = data.find(item => item.code === code);
+        setAllowedPanels(found && found.panels ? found.panels : []);
+        setRole(found && found.role ? found.role : '');
+        if (!(found && found.panels && found.panels.includes('admin'))) {
+          router.push('/panel/login');
+        }
+      } catch (err) {
+        setAllowedPanels([]);
+        setRole('');
+        router.push('/panel/login');
+      }
+    })();
   }, [router]);
 
   return (
