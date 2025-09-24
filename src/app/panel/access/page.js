@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import PanelFrame from '../PanelFrame';
 
 const panelKeys = [
