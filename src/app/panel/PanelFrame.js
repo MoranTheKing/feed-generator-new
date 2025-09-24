@@ -21,7 +21,7 @@ export default function PanelFrame({ title, role, actions, children }) {
           second = React.cloneElement(second, { className: `${second.props.className}`.trim() });
         }
         rows.push(
-          <div key={i} className="grid grid-cols-2 gap-x-4 w-full px-4 mb-3">
+          <div key={i} className="grid grid-cols-2 gap-x-4 w-full mb-3">
             <div className="w-full">{first}</div>
             <div className="w-full">{second}</div>
           </div>
