@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getPanelsForCode } from "./access.js";
 import { useRouter, usePathname } from "next/navigation";
 
 export default function PanelLayout({ children }) {
@@ -14,20 +13,25 @@ export default function PanelLayout({ children }) {
       return;
     }
     const code = sessionStorage.getItem("panelCode");
-    const panels = code ? getPanelsForCode(code) : [];
-    if (!code || panels.length === 0) {
+    if (!code) {
       router.push("/panel/login");
-    } else {
-      setChecked(true);
+      return;
     }
+    (async () => {
+      const res = await fetch("/api/panel/get-access");
+      const data = await res.json();
+      const found = data.find(item => item.code === code);
+      if (!found || !found.panels || found.panels.length === 0) {
+        router.push("/panel/login");
+      } else {
+        setChecked(true);
+      }
+    })();
   }, [router, pathname]);
 
   if (!checked) {
-    // מציג Loader רק אם לא ב-/panel/login
     return (
-      <div className="flex items-center justify-center min-h-[200px] text-lg text-gray-400">
-        טוען...
-      </div>
+      <div className="flex items-center justify-center min-h-[200px] text-lg text-gray-400">טוען...</div>
     );
   }
   return <>{children}</>;

@@ -2,36 +2,10 @@
 
 import PanelButton from '../PanelButton';
 import PanelLayout from '../PanelLayout';
-import { useEffect, useState } from 'react';
 
 export default function LeaderPanel() {
-  const [allowedPanels, setAllowedPanels] = useState([]);
-  const [role, setRole] = useState('');
-
-  useEffect(() => {
-    const code = sessionStorage.getItem('panelCode');
-    if (!code) return;
-    (async () => {
-      try {
-        const res = await fetch('/api/panel/get-access');
-        const data = await res.json();
-        if (!Array.isArray(data)) {
-          setAllowedPanels([]);
-          setRole('');
-          return;
-        }
-        const found = data.find(item => item.code === code);
-        setAllowedPanels(found && found.panels ? found.panels : []);
-        setRole(found && found.role ? found.role : '');
-      } catch (err) {
-        setAllowedPanels([]);
-        setRole('');
-      }
-    })();
-  }, []);
-
   return (
-    <PanelLayout title="פאנל ראש צוות" role={role}>
+    <PanelLayout title="פאנל ראש צוות">
       <div className="w-full grid grid-cols-2 gap-4">
         {(() => {
           const buttons = [

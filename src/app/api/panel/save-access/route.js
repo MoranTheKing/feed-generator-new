@@ -1,16 +1,16 @@
 
 
-import { addAccessCode, removeAccessCode, getAccessList } from '../../../panel/access.js';
+import { addAccessCode } from '../../../../../lib/access-db.js';
+import { pool } from '../../../../../lib/db.js';
 
 export async function POST(request) {
   try {
     const codes = await request.json();
     // Remove all existing codes
-    const list = getAccessList();
-    while (list.length > 0) list.pop();
+    await pool.query('DELETE FROM access_codes');
     // Add new codes
     for (const code of codes) {
-      addAccessCode(code.code, code.role, code.panels);
+      await addAccessCode(code.code, code.role, code.panels, code.editableByLeader || false);
     }
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err) {

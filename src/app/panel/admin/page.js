@@ -1,47 +1,11 @@
 "use client";
 
 import PanelButton from '../PanelButton';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import PanelLayout from '../PanelLayout';
 
 export default function AdminPanel() {
-  const [allowedPanels, setAllowedPanels] = useState([]);
-  const [role, setRole] = useState('');
-  const router = useRouter();
-
-  useEffect(() => {
-    const code = sessionStorage.getItem('panelCode');
-    if (!code) {
-      router.push('/panel/login');
-      return;
-    }
-    (async () => {
-      try {
-        const res = await fetch('/api/panel/get-access');
-        const data = await res.json();
-        if (!Array.isArray(data)) {
-          setAllowedPanels([]);
-          setRole('');
-          router.push('/panel/login');
-          return;
-        }
-        const found = data.find(item => item.code === code);
-        setAllowedPanels(found && found.panels ? found.panels : []);
-        setRole(found && found.role ? found.role : '');
-        if (!(found && found.panels && found.panels.includes('admin'))) {
-          router.push('/panel/login');
-        }
-      } catch (err) {
-        setAllowedPanels([]);
-        setRole('');
-        router.push('/panel/login');
-      }
-    })();
-  }, [router]);
-
   return (
-    <PanelLayout title="פאנל אדמין" role={role}>
+    <PanelLayout title="פאנל אדמין">
       <div className="w-full grid grid-cols-2 gap-4">
         {(() => {
           const buttons = [
