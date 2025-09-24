@@ -16,17 +16,18 @@ export default function ManageCodes({ role }) {
   const [newCode, setNewCode] = useState('');
   const [newRole, setNewRole] = useState('');
   const [newPanels, setNewPanels] = useState([]);
-  // role מגיע מה-layout
+
   useEffect(() => {
-    const code = sessionStorage.getItem('panelCode');
-    if (!code) return;
     fetch('/api/panel/admin/access/get')
       .then(res => res.json())
       .then(data => {
         setCodes(data);
         setOriginalCodes(data);
       })
-      .catch(() => setCodes([]));
+      .catch((e) => {
+        console.log('Failed to fetch access codes', e);
+        setCodes([]);
+      });
   }, []);
 
   const handlePanelChange = (panel) => {
@@ -35,14 +36,14 @@ export default function ManageCodes({ role }) {
 
   const handleAddCode = () => {
     if (!newCode || !newRole || newPanels.length === 0) return;
-  setCodes([...codes, { code: newCode, role: newRole, panels: newPanels }]);
+    setCodes([...codes, { code: newCode, role: newRole, panels: newPanels }]);
     setNewCode('');
     setNewRole('');
     setNewPanels([]);
   };
 
   const handleDeleteCode = (code) => {
-  setCodes(codes.filter(c => c.code !== code));
+    setCodes(codes.filter(c => c.code !== code));
   };
 
 
@@ -96,38 +97,18 @@ export default function ManageCodes({ role }) {
                     // מפעיל את שמירת השינויים
                     const res = await fetch('/api/panel/admin/access/save', {
                       method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(codes)
-                      });
-                      if (res.ok) {
-                        alert('השינויים נשמרו בהצלחה!');
-                        setOriginalCodes(codes);
-                      } else {
-                        alert('שגיאה בשמירה: ' + (await res.text()));
-                      }
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(codes)
+                    });
+                    if (res.ok) {
+                      alert('השינויים נשמרו בהצלחה!');
+                      setOriginalCodes(codes);
+                    } else {
+                      alert('שגיאה בשמירה: ' + (await res.text()));
                     }
-                  };
-                  if (role === 'ראש צוות') {
-                    return (
-                      <tr key={idx} className="border-b border-gray-700">
-                        <td>
-                          <input
-                            type="text"
-                            value={code.code}
-                             onChange={handleCodeChange}
-                             className="w-24 p-1 rounded bg-gray-700 text-white text-center text-sm border border-gray-600"
-                            onKeyDown={handleCodeKeyDown}
-                          />
-                        </td>
-                        <td>{code.role}</td>
-                      </tr>
-                    );
                   }
-                  // אדמין רואה הכל
-                  const handleEditableChange = (e) => {
-                    const checked = e.target.checked;
-                    setCodes(prev => prev.map((c, i) => i === idx ? { ...c, editableByLeader: checked } : c));
-                  };
+                };
+                if (role === 'ראש צוות') {
                   return (
                     <tr key={idx} className="border-b border-gray-700">
                       <td>
@@ -140,53 +121,73 @@ export default function ManageCodes({ role }) {
                         />
                       </td>
                       <td>{code.role}</td>
-                      <td>
-                        {panelKeys.map(panel => (
-                          <label key={panel.key} className="flex items-center gap-1">
-                            <input type="checkbox" checked={code.panels.includes(panel.key)} onChange={() => handlePanelToggle(code.code, panel.key)} />
-                            {panel.label}
-                          </label>
-                        ))}
-                      </td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={!!code.editableByLeader}
-                          onChange={handleEditableChange}
-                        />
-                      </td>
-                      <td>
-                        {code.role !== 'אדמין' && (
-                          <button onClick={() => handleDeleteCode(code.code)} className="bg-red-600 px-2 py-1 rounded">מחק</button>
-                        )}
-                      </td>
                     </tr>
                   );
-                })}
-            </tbody>
-          </table>
-          <button
-            onClick={async () => {
-              if (!isChanged) return;
-              const res = await fetch('/api/panel/admin/access/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(codes)
-              });
-              if (res.ok) {
-                alert('השינויים נשמרו בהצלחה!');
-                setOriginalCodes(codes);
-              } else {
-                alert('שגיאה בשמירה: ' + (await res.text()));
-              }
-            }}
-            disabled={!isChanged}
-            className={`w-full font-semibold py-2 rounded mt-8 transition border ${isChanged ? 'bg-green-600 text-white border-green-700 hover:bg-green-700' : 'bg-gray-700 text-gray-400 border-gray-500 cursor-not-allowed'}`}
-            style={{ boxShadow: 'none' }}
-          >
-            שמור שינויים
-          </button>
-        </div>
-      </PanelFrame>
+                }
+                // אדמין רואה הכל
+                const handleEditableChange = (e) => {
+                  const checked = e.target.checked;
+                  setCodes(prev => prev.map((c, i) => i === idx ? { ...c, editableByLeader: checked } : c));
+                };
+                return (
+                  <tr key={idx} className="border-b border-gray-700">
+                    <td>
+                      <input
+                        type="text"
+                        value={code.code}
+                        onChange={handleCodeChange}
+                        className="w-24 p-1 rounded bg-gray-700 text-white text-center text-sm border border-gray-600"
+                        onKeyDown={handleCodeKeyDown}
+                      />
+                    </td>
+                    <td>{code.role}</td>
+                    <td>
+                      {panelKeys.map(panel => (
+                        <label key={panel.key} className="flex items-center gap-1">
+                          <input type="checkbox" checked={code.panels.includes(panel.key)} onChange={() => handlePanelToggle(code.code, panel.key)} />
+                          {panel.label}
+                        </label>
+                      ))}
+                    </td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={!!code.editableByLeader}
+                        onChange={handleEditableChange}
+                      />
+                    </td>
+                    <td>
+                      {code.role !== 'אדמין' && (
+                        <button onClick={() => handleDeleteCode(code.code)} className="bg-red-600 px-2 py-1 rounded">מחק</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+        <button
+          onClick={async () => {
+            if (!isChanged) return;
+            const res = await fetch('/api/panel/admin/access/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(codes)
+            });
+            if (res.ok) {
+              alert('השינויים נשמרו בהצלחה!');
+              setOriginalCodes(codes);
+            } else {
+              alert('שגיאה בשמירה: ' + (await res.text()));
+            }
+          }}
+          disabled={!isChanged}
+          className={`w-full font-semibold py-2 rounded mt-8 transition border ${isChanged ? 'bg-green-600 text-white border-green-700 hover:bg-green-700' : 'bg-gray-700 text-gray-400 border-gray-500 cursor-not-allowed'}`}
+          style={{ boxShadow: 'none' }}
+        >
+          שמור שינויים
+        </button>
+      </div>
+    </PanelFrame>
   );
 }
