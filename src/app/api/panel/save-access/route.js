@@ -2,6 +2,7 @@
 
 import { addAccessCode } from '../../../../../lib/access-db.js';
 import { pool } from '../../../../../lib/db.js';
+export const runtime = 'nodejs';
 
 export async function POST(request) {
   try {
