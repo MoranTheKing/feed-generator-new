@@ -6,7 +6,7 @@ export default function Header() {
   const pathname = usePathname();
   const isPanel = pathname.startsWith("/panel");
   return (
-    <header className="w-full bg-gray-900 border-b border-gray-700 py-3 px-4 shadow-md z-20 relative min-h-[120px] flex items-center justify-center">
+    <header className="w-full bg-gray-900 border-b border-gray-700 py-3 shadow-md z-20 relative min-h-[120px] flex items-center justify-center">
       {/* כפתור לפאנל בפינה הימנית העליונה */}
       {!isPanel && (
         <Link

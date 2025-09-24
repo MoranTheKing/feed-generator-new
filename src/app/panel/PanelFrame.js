@@ -9,18 +9,26 @@ export default function PanelFrame({ title, role, actions, children }) {
     const rows = [];
     for (let i = 0; i < actions.length; i += 2) {
       const row = actions.slice(i, i + 2);
-      const first = React.isValidElement(row[0]) ? React.cloneElement(row[0], { className: `${row[0].props.className || ''} w-full`.trim() }) : row[0];
-      const second = row[1] && React.isValidElement(row[1]) ? React.cloneElement(row[1], { className: `${row[1].props.className || ''} w-full`.trim() }) : row[1];
+      // Base clones to ensure full width inside the slot
+      let first = React.isValidElement(row[0]) ? React.cloneElement(row[0], { className: `${row[0].props.className || ''} w-full`.trim() }) : row[0];
+      let second = row[1] && React.isValidElement(row[1]) ? React.cloneElement(row[1], { className: `${row[1].props.className || ''} w-full`.trim() }) : row[1];
       if (row.length === 2) {
+        // For pairs, make inner corners square so the center gap looks clean and centered
+        if (React.isValidElement(first)) {
+          first = React.cloneElement(first, { className: `${first.props.className}`.trim() });
+        }
+        if (React.isValidElement(second)) {
+          second = React.cloneElement(second, { className: `${second.props.className}`.trim() });
+        }
         rows.push(
-          <div key={i} className="grid grid-cols-2 gap-x-4 gap-y-3 w-full px-4 mb-3">
+          <div key={i} className="grid grid-cols-2 gap-x-4 w-full px-4 mb-3">
             <div className="w-full">{first}</div>
             <div className="w-full">{second}</div>
           </div>
         );
       } else {
         rows.push(
-          <div key={i} className="grid grid-cols-2 gap-x-4 gap-y-3 w-full px-4 mb-3">
+          <div key={i} className="grid grid-cols-2 gap-x-4 w-full mb-3">
             <div className="col-span-2 w-full">{first}</div>
           </div>
         );
