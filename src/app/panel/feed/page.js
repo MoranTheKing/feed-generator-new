@@ -1,6 +1,5 @@
 "use client";
 
-import PanelLayout from '../PanelLayout';
 import PanelButton from '../hooks/PanelButton';
 
 export default function FeedPanel() {
