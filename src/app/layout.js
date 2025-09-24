@@ -1,8 +1,9 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "public/MainStyle.css";
-import Head from "next/head";
+
 import Header from "./Header";
+import credits from "./credits";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,9 +32,19 @@ export default function RootLayout({ children }) {
         </div>
         <footer className="w-full text-center py-6 bg-gray-800 text-gray-300 text-lg mt-auto">
           קרדיט:
-          <a href="https://www.fxp.co.il/member.php?u=159073" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline mx-2">RemixN1V</a>
-          &amp;
-          <a href="https://www.fxp.co.il/member.php?u=1013527" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline mx-2">ModerniMan</a>
+          {credits && credits.length > 0 && credits.map((c, i) => (
+            <span key={i}>
+              <a
+                href={c.profile}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline mx-2"
+              >
+                {c.nick}
+              </a>
+              {i < credits.length - 1 && <span>&amp;</span>}
+            </span>
+          ))}
         </footer>
       </body>
     </html>

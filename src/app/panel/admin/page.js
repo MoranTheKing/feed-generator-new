@@ -47,6 +47,9 @@ export default function AdminPanel() {
           <Link href="/panel/access" className="block w-full border border-gray-500 text-gray-300 font-semibold py-4 rounded text-center text-xl hover:bg-gray-700 transition" style={{background:'transparent'}}>
             ניהול גישות
           </Link>
+          <Link href="/panel/admin/credits" className="block w-full border border-gray-500 text-blue-300 font-semibold py-4 rounded text-center text-xl hover:bg-gray-700 transition" style={{background:'transparent'}}>
+            ניהול קרדיטים בפוטר
+          </Link>
         </div>
       </div>
     </main>
