@@ -1,4 +1,4 @@
-import { getCreditsList } from '../../../../../../lib/credits-db.js';
+import { getCreditsList } from '../../../../../../../lib/credits-db.js';
 export const runtime = 'nodejs';
 
 export async function GET() {

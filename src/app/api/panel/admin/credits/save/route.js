@@ -1,5 +1,5 @@
-import { addCredit } from '../../../../../../lib/credits-db.js';
-import { pool } from '../../../../../../lib/db.js';
+import { addCredit } from '../../../../../../../lib/credits-db.js';
+import { pool } from '../../../../../../../lib/db.js';
 export const runtime = 'nodejs';
 
 export async function POST(request) {
