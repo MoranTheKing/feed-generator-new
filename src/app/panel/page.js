@@ -15,12 +15,15 @@ const panelButtons = [
 export default function PanelHome() {
   const [allowedPanels, setAllowedPanels] = useState([]);
   const [role, setRole] = useState('');
+  const [checked, setChecked] = useState(false);
   const router = useRouter();
+
 
   useEffect(() => {
     const code = sessionStorage.getItem('panelCode');
     if (!code) {
       router.push('/panel/login');
+      setTimeout(() => setChecked(true), 0); // ensure rerender after navigation
       return;
     }
     (async () => {
@@ -33,37 +36,43 @@ export default function PanelHome() {
       } catch (err) {
         setAllowedPanels([]);
         setRole('');
+      } finally {
+        setChecked(true);
       }
     })();
   }, [router]);
 
+  if (!checked) return (
+    <div className="flex items-center justify-center min-h-[200px] text-lg text-gray-400">טוען...</div>
+  );
+
   return (
     <PanelLayout title="מרכז הפאנלים" role={role}>
-  <div className="w-full grid grid-cols-2 gap-4 px-0" dir="rtl">
-    {(() => {
-      const filtered = panelButtons.filter(btn => allowedPanels.includes(btn.key));
-      const rows = [];
-      for (let i = 0; i < filtered.length; i += 2) {
-        const row = filtered.slice(i, i + 2);
-        row.forEach((btn, j) => {
-          rows.push(
-            <PanelButton
-              as="a"
-              href={`/panel/${btn.key}`}
-              key={btn.key}
-              className={
-                "text-xl text-center font-bold text-white rounded-lg shadow-md" +
-                (row.length === 1 ? " col-span-2" : "")
-              }
-              style={{ backgroundColor: btn.color }}
-            >
-              {btn.label}
-            </PanelButton>
-          );
-        });
-      }
-      return rows;
-    })()}
+      <div className="w-full grid grid-cols-2 gap-4 px-0" dir="rtl">
+        {(() => {
+          const filtered = panelButtons.filter(btn => allowedPanels.includes(btn.key));
+          const rows = [];
+          for (let i = 0; i < filtered.length; i += 2) {
+            const row = filtered.slice(i, i + 2);
+            row.forEach((btn, j) => {
+              rows.push(
+                <PanelButton
+                  as="a"
+                  href={`/panel/${btn.key}`}
+                  key={btn.key}
+                  className={
+                    "text-xl text-center font-bold text-white rounded-lg shadow-md" +
+                    (row.length === 1 ? " col-span-2" : "")
+                  }
+                  style={{ backgroundColor: btn.color }}
+                >
+                  {btn.label}
+                </PanelButton>
+              );
+            });
+          }
+          return rows;
+        })()}
       </div>
       <PanelButton
         onClick={() => {

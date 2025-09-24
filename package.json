@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack -p 2083",
+    "dev": "next dev --turbopack -p 2053",
     "build": "next build --turbopack",
-    "start": "next start -p 2083",
+    "start": "next start -p 2053",
     "lint": "eslint",
     "nodemon": "npx nodemon --exec \"npm run build && npm run start\" --watch .",
     "scrape": "node scripts/scrape_categories.js"
