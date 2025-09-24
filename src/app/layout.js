@@ -3,7 +3,7 @@ import "./globals.css";
 import "public/MainStyle.css";
 
 import Header from "./Header";
-import credits from "./credits";
+import credits from './panel/admin/credits.json';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
