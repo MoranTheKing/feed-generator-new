@@ -1,7 +1,9 @@
 "use client";
-import Link from 'next/link';
+
+import PanelButton from '../PanelButton';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import PanelLayout from '../PanelLayout';
 
 export default function AdminPanel() {
   const [allowedPanels, setAllowedPanels] = useState([]);
@@ -39,19 +41,35 @@ export default function AdminPanel() {
   }, [router]);
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center p-8 bg-transparent text-white">
-      <div className="max-w-xl w-full bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-8 items-center">
-        <h1 className="text-4xl mb-4 font-bold">פאנל אדמין</h1>
-        <p className="text-xl text-gray-400 mb-8">דרגתך: {role || '---'}</p>
-        <div className="w-full grid grid-cols-1 gap-6">
-          <Link href="/panel/access" className="block w-full border border-gray-500 text-gray-300 font-semibold py-4 rounded text-center text-xl hover:bg-gray-700 transition" style={{background:'transparent'}}>
-            ניהול גישות
-          </Link>
-          <Link href="/panel/admin/credits" className="block w-full border border-gray-500 text-blue-300 font-semibold py-4 rounded text-center text-xl hover:bg-gray-700 transition" style={{background:'transparent'}}>
-            ניהול קרדיטים בפוטר
-          </Link>
-        </div>
+    <PanelLayout title="פאנל אדמין" role={role}>
+      <div className="w-full grid grid-cols-2 gap-4">
+        {(() => {
+          const buttons = [
+            { href: "/panel/access", label: "ניהול גישות", className: "bg-gray-700 hover:bg-gray-800 text-gray-200" },
+            { href: "/panel/admin/credits", label: "ניהול קרדיטים בפוטר", className: "bg-blue-700 hover:bg-blue-800 text-blue-200" },
+          ];
+          const rows = [];
+          for (let i = 0; i < buttons.length; i += 2) {
+            const row = buttons.slice(i, i + 2);
+            row.forEach((btn, j) => {
+              rows.push(
+                <PanelButton
+                  as="a"
+                  href={btn.href}
+                  key={btn.href}
+                  className={
+                    `text-xl text-center rounded-lg shadow-md font-bold ${btn.className}` +
+                    (row.length === 1 ? " col-span-2" : "")
+                  }
+                >
+                  {btn.label}
+                </PanelButton>
+              );
+            });
+          }
+          return rows;
+        })()}
       </div>
-    </main>
+    </PanelLayout>
   );
 }

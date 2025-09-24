@@ -1,6 +1,9 @@
 "use client";
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import PanelLayout from '../PanelLayout';
+import PanelButton from '../PanelButton';
 
 export default function FeedPanel() {
   const [role, setRole] = useState('');
@@ -26,11 +29,32 @@ export default function FeedPanel() {
   }, [router]);
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center p-8 bg-transparent text-white">
-      <div className="max-w-xl w-full bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-8 items-center">
-        <h1 className="text-4xl mb-4 font-bold">פאנל עורך פיד</h1>
-        <p className="text-xl text-gray-400 mb-8">דרגתך: {role || '---'}</p>
+    <PanelLayout title="פאנל עורך פיד" role={role}>
+      <div className="w-full grid grid-cols-2 gap-4">
+        {(() => {
+          const buttons = [
+            { label: "פעולה לדוגמה", className: "bg-blue-700 hover:bg-blue-800 text-white" },
+          ];
+          const rows = [];
+          for (let i = 0; i < buttons.length; i += 2) {
+            const row = buttons.slice(i, i + 2);
+            row.forEach((btn, j) => {
+              rows.push(
+                <PanelButton
+                  key={btn.label}
+                  className={
+                    `text-xl text-center rounded-lg shadow-md font-bold ${btn.className}` +
+                    (row.length === 1 ? " col-span-2" : "")
+                  }
+                >
+                  {btn.label}
+                </PanelButton>
+              );
+            });
+          }
+          return rows;
+        })()}
       </div>
-    </main>
+    </PanelLayout>
   );
 }
