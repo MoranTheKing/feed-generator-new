@@ -42,26 +42,32 @@ function SortableCredit({ credit, index, onEdit, onDelete }) {
     <li 
       ref={setNodeRef} 
       style={style} 
-      className="flex items-center gap-2 bg-gray-700 rounded p-2 cursor-move"
-      {...attributes} 
-      {...listeners}
+      className="flex items-center gap-2 bg-gray-700 rounded p-2"
     >
-      <span className="flex-1">{credit.nick} (<a href={credit.profile} className="underline text-blue-300" target="_blank">פרופיל</a>)</span>
+      <div 
+        className="flex-1 cursor-move p-2 -m-2" 
+        {...attributes} 
+        {...listeners}
+      >
+        {credit.nick} (<a href={credit.profile} className="underline text-blue-300" target="_blank" rel="noopener noreferrer">פרופיל</a>)
+      </div>
       <button 
-        className="px-2 py-1 bg-yellow-600 rounded" 
+        className="px-2 py-1 bg-yellow-600 hover:bg-yellow-700 rounded cursor-pointer" 
         onClick={(e) => {
           e.stopPropagation();
           onEdit(index);
         }}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         ערוך
       </button>
       <button 
-        className="px-2 py-1 bg-red-700 rounded" 
+        className="px-2 py-1 bg-red-700 hover:bg-red-800 rounded cursor-pointer" 
         onClick={(e) => {
           e.stopPropagation();
           onDelete(index);
         }}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         מחק
       </button>
