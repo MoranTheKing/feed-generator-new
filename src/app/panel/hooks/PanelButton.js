@@ -20,7 +20,7 @@ export default function PanelButton({
   return (
     <Comp
       {...extraProps}
-      className={`block w-full rounded-lg font-semibold shadow transition-all duration-150 focus:outline-none ${sizeClasses} ${className}`}
+      className={`block rounded-lg font-semibold shadow transition-all duration-150 focus:outline-none ${sizeClasses} ${className}`}
       style={style}
       {...rest}
     >

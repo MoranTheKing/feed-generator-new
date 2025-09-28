@@ -1,7 +1,13 @@
 "use client";
 import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import depts from 'public/dept-config.json';
 import BackButtons from "../BackButtons";
+import { 
+  simulateTemplateForPreview, 
+  GLOBAL_PLACEHOLDERS, 
+  GLOBAL_IF_BLOCKS 
+} from '../../../lib/bbcode-preview.js';
 
 // Helper function to process the media link
 // פונקציה לעיבוד בלוקים מותנים בתבנית BBCODE
@@ -42,6 +48,13 @@ const processMediaLink = (url) => {
 
 // The main generator component
 function ArticleGeneratorComponent() {
+    const searchParams = useSearchParams();
+    const templateId = searchParams?.get('template'); // Get ?template=ID from URL
+
+    // Template state
+    const [currentTemplate, setCurrentTemplate] = useState(null);
+    const [templateError, setTemplateError] = useState('');
+
     // --- States for 5 אשכולות רלוונטיים ---
     const [threads, setThreads] = useState([
         { title: '', link: '' },
@@ -70,6 +83,49 @@ function ArticleGeneratorComponent() {
     const [previewContent, setPreviewContent] = useState('');
     const [editorColor, setEditorColor] = useState('#000000');
     const [editorSize, setEditorSize] = useState(3);
+
+    // --- Template Loading Logic ---
+    const loadTemplate = async () => {
+        try {
+            let templateData = null;
+            
+            if (templateId) {
+                // Try to load specific template by ID
+                const response = await fetch(`/api/bbcode/templates/${templateId}`);
+                if (response.ok) {
+                    templateData = await response.json();
+                } else {
+                    setTemplateError(`תבנית עם ID ${templateId} לא נמצאה`);
+                    return;
+                }
+            } else {
+                // Try to load active template
+                const response = await fetch('/api/bbcode/templates/active');
+                if (response.ok) {
+                    templateData = await response.json();
+                }
+            }
+            
+            if (templateData && templateData.content) {
+                setCurrentTemplate(templateData);
+                setTemplateError('');
+            } else {
+                // Fallback to old system
+                setCurrentTemplate(null);
+                setTemplateError('');
+                console.log('No template found, using legacy system');
+            }
+        } catch (error) {
+            console.error('Error loading template:', error);
+            setCurrentTemplate(null);
+            setTemplateError('');
+        }
+    };
+
+    // Load template on component mount and when templateId changes
+    useEffect(() => {
+        loadTemplate();
+    }, [templateId]);
 
     // --- BBCode editor functions (unchanged) ---
     const applyBbCode = (tag, value, customText = null) => {
@@ -125,7 +181,88 @@ function ArticleGeneratorComponent() {
             const forumFilled = forumName !== 'בחירת פורום';
             const forumOrLinksFilled = forumFilled || additionalLinksFilled;
 
+            // Prepare data object for template processing
+            const templateData = {
+                ArticleTitle: title || 'כותרת',
+                Content: content || 'תוכן',
+                ImageLink: imageLink ? media.bbcode : '',
+                RelevantLinkDesc: relevantLinkDesc || '',
+                RelevantLink: relevantLink || '',
+                Source: source || '',
+                ForumName: forumFilled ? forumName : '',
+                ForumID: forumFilled ? '123' : '', // Default forum ID
+                AdditionalLink1: threads[0]?.link || '',
+                AdditionalTitle1: threads[0]?.title || '',
+                AdditionalLink2: threads[1]?.link || '',
+                AdditionalTitle2: threads[1]?.title || '',
+                AdditionalLink3: threads[2]?.link || '',
+                AdditionalTitle3: threads[2]?.title || '',
+                AdditionalLink4: threads[3]?.link || '',
+                AdditionalTitle4: threads[3]?.title || '',
+                AdditionalLink5: threads[4]?.link || '',
+                AdditionalTitle5: threads[4]?.title || '',
+            };
+
+            // --- Generate BBCode ---
+            if (currentTemplate && currentTemplate.content) {
+                // Use new template system
+                try {
+                    const processedBBCode = simulateTemplateForPreview(currentTemplate.content, templateData, {
+                        removeUnknown: false // Keep unknown placeholders for manual editing
+                    });
+                    setBBcode(processedBBCode);
+                } catch (error) {
+                    console.error('Error processing new template:', error);
+                    setBBcode(`שגיאה בעיבוד התבנית החדשה: ${error.message}`);
+                }
+            } else {
+                // Fallback to legacy system
+                try {
+                    const bbcodeTemplatePath = deptConfig.bbcodeTemplateFile ?? '/feed/bbcode.bb';
+                    const response = await fetch(bbcodeTemplatePath);
+                    if (!response.ok) throw new Error(`לא נמצא קובץ תבנית BBCODE בנתיב ${bbcodeTemplatePath}`);
+
+                    let bbcodeTemplate = await response.text();
+
+                    // עיבוד בלוקים מותנים
+                    const blockValues = {
+                        IMAGELINK: imageLink,
+                        RELEVANTLINK: relevantLink,
+                        SOURCE: source,
+                        ADDITIONAL_LINKS: additionalLinksFilled ? '1' : '',
+                        FORUM: forumFilled ? '1' : '',
+                        FORUM_OR_LINKS: forumOrLinksFilled ? '1' : '',
+                    };
+                    bbcodeTemplate = processConditionalBlocks(bbcodeTemplate, blockValues);
+
+                    bbcodeTemplate = bbcodeTemplate.replace(/%deptColor%/g, deptConfig.deptColor);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%ArticleTitle%/g, title);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%ImageLink%/g, media.bbcode);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%Content%/g, content);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%RelevantLinkDesc%/g, relevantLinkDesc);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%RelevantLink%/g, relevantLink);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%Source%/g, source);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%ForumName%/g, forumName);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink1%/g, threads[0].link);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle1%/g, threads[0].title);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink2%/g, threads[1].link);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle2%/g, threads[1].title);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink3%/g, threads[2].link);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle3%/g, threads[2].title);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink4%/g, threads[3].link);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle4%/g, threads[3].title);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink5%/g, threads[4].link);
+                    bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle5%/g, threads[4].title);
+
+                    setBBcode(bbcodeTemplate);
+                } catch (error) {
+                    console.error('Error generating BBCode:', error);
+                    setBBcode(`שגיאה ביצירת BBCode: ${error.message}`);
+                }
+            }
+
             // --- Generate HTML for Preview ---
+            // Always use legacy HTML preview system for now
             try {
                 const htmlTemplatePath = deptConfig.templateFile ?? '/template.txt';
                 const response = await fetch(htmlTemplatePath);
@@ -143,16 +280,16 @@ function ArticleGeneratorComponent() {
                 htmlTemplate = htmlTemplate.replace(/%Source%/g, source ? source : '');
                 htmlTemplate = htmlTemplate.replace(/%ForumName%/g, forumFilled ? forumName : '');
                 // אשכולות רלוונטיים
-                htmlTemplate = htmlTemplate.replace(/%AdditionalLink1%/g, threads[0].link ? threads[0].link : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle1%/g, threads[0].title ? threads[0].title : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalLink2%/g, threads[1].link ? threads[1].link : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle2%/g, threads[1].title ? threads[1].title : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalLink3%/g, threads[2].link ? threads[2].link : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle3%/g, threads[2].title ? threads[2].title : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalLink4%/g, threads[3].link ? threads[3].link : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle4%/g, threads[3].title ? threads[3].title : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalLink5%/g, threads[4].link ? threads[4].link : '');
-                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle5%/g, threads[4].title ? threads[4].title : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalLink1%/g, threads[0]?.link ? threads[0].link : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle1%/g, threads[0]?.title ? threads[0].title : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalLink2%/g, threads[1]?.link ? threads[1].link : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle2%/g, threads[1]?.title ? threads[1].title : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalLink3%/g, threads[2]?.link ? threads[2].link : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle3%/g, threads[2]?.title ? threads[2].title : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalLink4%/g, threads[3]?.link ? threads[3].link : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle4%/g, threads[3]?.title ? threads[3].title : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalLink5%/g, threads[4]?.link ? threads[4].link : '');
+                htmlTemplate = htmlTemplate.replace(/%AdditionalTitle5%/g, threads[4]?.title ? threads[4].title : '');
 
                 // Remove conditional blocks if not filled
                 htmlTemplate = htmlTemplate.replace(/%IF_FORUM_OR_LINKS_START%([\s\S]*?)%IF_FORUM_OR_LINKS_END%/g, forumOrLinksFilled ? '$1' : '');
@@ -165,54 +302,10 @@ function ArticleGeneratorComponent() {
                 console.error('Error generating HTML:', error);
                 setPreviewContent(`<p style="color:red; font-weight:bold;">שגיאה ביצירת HTML: ${error.message}</p>`);
             }
-
-            // --- Generate BBCode ---
-            try {
-                const bbcodeTemplatePath = deptConfig.bbcodeTemplateFile ?? '/feed/bbcode.bb';
-                const response = await fetch(bbcodeTemplatePath);
-                if (!response.ok) throw new Error(`לא נמצא קובץ תבנית BBCODE בנתיב ${bbcodeTemplatePath}`);
-
-                let bbcodeTemplate = await response.text();
-
-                                // עיבוד בלוקים מותנים
-                                const blockValues = {
-                                    IMAGELINK: imageLink,
-                                    RELEVANTLINK: relevantLink,
-                                    SOURCE: source,
-                                    ADDITIONAL_LINKS: additionalLinksFilled ? '1' : '',
-                                    FORUM: forumFilled ? '1' : '',
-                                    FORUM_OR_LINKS: forumOrLinksFilled ? '1' : '',
-                                };
-                                bbcodeTemplate = processConditionalBlocks(bbcodeTemplate, blockValues);
-
-                bbcodeTemplate = bbcodeTemplate.replace(/%deptColor%/g, deptConfig.deptColor);
-                bbcodeTemplate = bbcodeTemplate.replace(/%ArticleTitle%/g, title);
-                bbcodeTemplate = bbcodeTemplate.replace(/%ImageLink%/g, media.bbcode);
-                bbcodeTemplate = bbcodeTemplate.replace(/%Content%/g, content);
-                bbcodeTemplate = bbcodeTemplate.replace(/%RelevantLinkDesc%/g, relevantLinkDesc);
-                bbcodeTemplate = bbcodeTemplate.replace(/%RelevantLink%/g, relevantLink);
-                bbcodeTemplate = bbcodeTemplate.replace(/%Source%/g, source);
-                bbcodeTemplate = bbcodeTemplate.replace(/%ForumName%/g, forumName);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink1%/g, threads[0].link);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle1%/g, threads[0].title);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink2%/g, threads[1].link);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle2%/g, threads[1].title);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink3%/g, threads[2].link);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle3%/g, threads[2].title);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink4%/g, threads[3].link);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle4%/g, threads[3].title);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalLink5%/g, threads[4].link);
-                bbcodeTemplate = bbcodeTemplate.replace(/%AdditionalTitle5%/g, threads[4].title);
-
-                setBBcode(bbcodeTemplate);
-            } catch (error) {
-                console.error('Error generating BBCode:', error);
-                setBBcode(`שגיאה ביצירת BBCode: ${error.message}`);
-            }
         };
 
         generateOutputs();
-    }, [title, imageLink, content, relevantLinkDesc, relevantLink, source, forumName, threads]);
+    }, [title, imageLink, content, relevantLinkDesc, relevantLink, source, forumName, threads, currentTemplate]);
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text.trim()).then(() => {
@@ -225,6 +318,25 @@ function ArticleGeneratorComponent() {
             <div className="z-10 w-full max-w-7xl items-center justify-between font-mono text-sm lg:flex flex-col">
                 <BackButtons />
                 <h1 className="text-4xl font-bold mb-4">מחולל כתבות</h1>
+                
+                {/* Template Status */}
+                {currentTemplate ? (
+                    <div className="mb-4 p-3 bg-blue-900 rounded-lg">
+                        <p className="text-sm text-blue-200">
+                            🎯 משתמש בתבנית: <strong>{currentTemplate.name}</strong>
+                            {templateId ? ` (ID: ${templateId})` : ' (פעילה)'}
+                        </p>
+                    </div>
+                ) : templateError ? (
+                    <div className="mb-4 p-3 bg-red-900 rounded-lg">
+                        <p className="text-sm text-red-200">❌ {templateError} - חזר למערכת הישנה</p>
+                    </div>
+                ) : (
+                    <div className="mb-4 p-3 bg-gray-700 rounded-lg">
+                        <p className="text-sm text-gray-300">📁 משתמש במערכת התבניות הישנה</p>
+                    </div>
+                )}
+                
                 <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Input Section */}
                     <div className="bg-gray-800 p-6 rounded-lg space-y-4 w-full max-w-6xl mx-auto overflow-x-auto">

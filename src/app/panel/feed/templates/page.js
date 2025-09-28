@@ -184,9 +184,9 @@ export default function TemplatesManagerPage() {
       {/* רשימת תבניות */}
       <div className="w-full space-y-4">
         <div className="flex gap-2">
-          <PanelButton className="bg-green-600 hover:bg-green-700" onClick={onAddNew}>+ תבנית חדשה</PanelButton>
+          <PanelButton className="bg-green-600 hover:bg-green-700 w-auto" onClick={onAddNew}>+ תבנית חדשה</PanelButton>
           <PanelButton
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 w-auto"
             onClick={() => {
               if (selectedId) onSelect(selectedId);
             }}
@@ -212,11 +212,11 @@ export default function TemplatesManagerPage() {
                       <div className="text-xs text-gray-400">{t.is_active ? "🟢 פעילה" : "⚪ לא פעילה"}</div>
                     </button>
                     {!t.is_active && (
-                      <PanelButton size="xs" className="bg-yellow-600 hover:bg-yellow-700 w-auto" onClick={() => onSetActive(t.id)}>
+                      <PanelButton className="bg-yellow-600 hover:bg-yellow-700 w-auto" onClick={() => onSetActive(t.id)}>
                         הגדר פעילה
                       </PanelButton>
                     )}
-                    <PanelButton size="xs" className="bg-red-600 hover:bg-red-700 w-auto" onClick={() => onDelete(t.id)}>
+                    <PanelButton className="bg-red-600 hover:bg-red-700 w-[200px]" onClick={() => onDelete(t.id)}>
                       מחק
                     </PanelButton>
                   </div>
