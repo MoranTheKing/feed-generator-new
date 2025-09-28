@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import PanelFrame from "../../PanelFrame";
 import usePanelCodeInfo from "../../hooks/usePanelCodeInfo";
 import PanelButton from "../../hooks/PanelButton";
-import "./preview.css";
 
 import {
   GLOBAL_PLACEHOLDERS,
