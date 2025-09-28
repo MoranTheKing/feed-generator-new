@@ -1,0 +1,30 @@
+import { NextResponse } from 'next/server';
+import { getActiveTemplate, setActiveTemplate } from '../../../../../../lib/bbcode-templates-db.js';
+
+// GET /api/bbcode/templates/active - get current active template (full)
+export async function GET() {
+  try {
+    const tpl = await getActiveTemplate();
+    return NextResponse.json(tpl || null);
+  } catch (error) {
+    console.error('[bbcode-templates/active][GET]', error);
+    return NextResponse.json({ error: 'Failed to fetch active template' }, { status: 500 });
+  }
+}
+
+// POST /api/bbcode/templates/active - set active template
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const id = Number(body?.id);
+    if (!id) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+
+    const ok = await setActiveTemplate(id);
+    if (!ok) return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('[bbcode-templates/active][POST]', error);
+    return NextResponse.json({ error: 'Failed to set active template' }, { status: 500 });
+  }
+}
