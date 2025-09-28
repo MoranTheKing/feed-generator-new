@@ -208,15 +208,15 @@ export default function TemplatesManagerPage() {
                 <div key={t.id} className={`p-2 rounded border ${selectedId === t.id ? "border-blue-500" : "border-transparent"}`}>
                   <div className="flex items-center justify-between gap-2">
                     <button className="text-left flex-1" onClick={() => onSelect(t.id)}>
-                      <div className="font-semibold">{t.name}</div>
+                      <div className="font-semibold text-lg md:text-xl">{t.name}</div>
                       <div className="text-xs text-gray-400">{t.is_active ? "🟢 פעילה" : "⚪ לא פעילה"}</div>
                     </button>
                     {!t.is_active && (
-                      <PanelButton className="bg-yellow-600 hover:bg-yellow-700 w-auto px-3" onClick={() => onSetActive(t.id)}>
+                      <PanelButton className="bg-yellow-600 hover:bg-yellow-700 w-auto px-2 py-1 text-xs" onClick={() => onSetActive(t.id)}>
                         הגדר פעילה
                       </PanelButton>
                     )}
-                    <PanelButton className="bg-red-600 hover:bg-red-700 w-auto px-3" onClick={() => onDelete(t.id)}>
+                    <PanelButton className="bg-red-600 hover:bg-red-700 w-auto px-2 py-1 text-xs" onClick={() => onDelete(t.id)}>
                       מחק
                     </PanelButton>
                   </div>
