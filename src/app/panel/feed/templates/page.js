@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import PanelFrame from "../../PanelFrame";
 import usePanelCodeInfo from "../../hooks/usePanelCodeInfo";
 import PanelButton from "../../hooks/PanelButton";
+import "./preview.css";
 
 import {
   GLOBAL_PLACEHOLDERS,
@@ -274,7 +275,7 @@ export default function TemplatesManagerPage() {
                 <div className="mt-4">
                   <h4 className="text-md font-bold mb-2">תצוגה מקדימה</h4>
                   <div
-                    className="bg-white text-black rounded p-3 max-w-none"
+                    className="bg-white text-black rounded p-3 max-w-none bbcode-preview"
                     dangerouslySetInnerHTML={{ __html: previewHtml || '<div class="text-gray-500">לא ניתן להציג תצוגה מקדימה</div>' }}
                   />
                   <div className="text-xs text-gray-400 mt-1">התצוגה המקדימה משתמשת בנתוני דוגמה בלבד. שמירה תמיד RAW.</div>

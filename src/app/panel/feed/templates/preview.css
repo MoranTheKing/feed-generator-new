@@ -1,0 +1,17 @@
+.bbcode-preview {
+  /* Neutralize global font settings inside preview */
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-weight: 400 !important; /* baseline */
+  color: #000;
+}
+
+/* Force all descendants to inherit the container weight to defeat `* { font-weight: 300; }` */
+.bbcode-preview * {
+  font-weight: inherit !important;
+}
+
+/* Ensure classic bold tags also show as bold even under resets */
+.bbcode-preview b,
+.bbcode-preview strong {
+  font-weight: 700 !important;
+}
