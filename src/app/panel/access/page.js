@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import PanelFrame from '../PanelFrame';
 import usePanelCodeInfo from '../hooks/usePanelCodeInfo';
+import { authenticatedFetch } from '../../../lib/api-client.js';
 
 const panelKeys = [
   { key: 'feed', label: 'פאנל פיד' },
@@ -21,7 +22,7 @@ export default function ManageCodes() {
   const [newPanels, setNewPanels] = useState([]);
 
   useEffect(() => {
-    fetch('/api/panel/admin/access/get')
+    authenticatedFetch('/api/panel/admin/access/get')
       .then(res => res.json())
       .then(data => {
         console.log('Fetched access codes:', data);
@@ -99,7 +100,7 @@ export default function ManageCodes() {
                 const handleCodeKeyDown = async (e) => {
                   if (e.key === 'Enter') {
                     // מפעיל את שמירת השינויים
-                    const res = await fetch('/api/panel/admin/access/save', {
+                    const res = await authenticatedFetch('/api/panel/admin/access/save', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(codes)
@@ -173,7 +174,7 @@ export default function ManageCodes() {
         <button
           onClick={async () => {
             if (!isChanged) return;
-            const res = await fetch('/api/panel/admin/access/save', {
+            const res = await authenticatedFetch('/api/panel/admin/access/save', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(codes)

@@ -200,7 +200,7 @@ function ArticleGeneratorComponent() {
             // Fetch dynamic ErrorUserID setting
             let errorUserId = '';
             try {
-                const r = await fetch('/api/panel/leader/settings/error-user', { cache: 'no-store' });
+                const r = await fetch('/api/feed/pubsettings', { cache: 'no-store' });
                 if (r.ok) {
                     const d = await r.json();
                     errorUserId = d?.id || '';

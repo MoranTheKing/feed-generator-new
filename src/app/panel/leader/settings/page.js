@@ -4,6 +4,7 @@ import PanelFrame from "../../PanelFrame";
 import PanelButton from "../../hooks/PanelButton";
 import usePanelCodeInfo from "../../hooks/usePanelCodeInfo";
 import { useEffect, useState } from "react";
+import { authenticatedFetch } from "../../../../lib/api-client.js";
 
 export default function LeaderSettingsPage() {
   const info = usePanelCodeInfo();
@@ -15,7 +16,7 @@ export default function LeaderSettingsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/panel/leader/settings/error-user', { cache: 'no-store' });
+        const res = await authenticatedFetch('/api/panel/leader/settings/error-user', { cache: 'no-store' });
         const data = await res.json();
         if (res.ok) setValue(data?.id || '');
       } finally {
@@ -27,7 +28,7 @@ export default function LeaderSettingsPage() {
   const onSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/panel/leader/settings/error-user', {
+      const res = await authenticatedFetch('/api/panel/leader/settings/error-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: value }),

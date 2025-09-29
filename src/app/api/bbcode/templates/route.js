@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { listTemplates, createTemplate } from '../../../../../lib/bbcode-templates-db.js';
+import { withPanelAuth } from '../../../../../lib/api-auth.js';
 
 // GET /api/bbcode/templates - list all templates (no content)
-export async function GET() {
+export async function GET(request) {
+  const authResult = await withPanelAuth(request, ['feed']);
+  if (!authResult.authorized) return authResult.errorResponse;
+
   try {
     const templates = await listTemplates();
     return NextResponse.json(templates);
@@ -14,6 +18,9 @@ export async function GET() {
 
 // POST /api/bbcode/templates - create new template
 export async function POST(request) {
+  const authResult = await withPanelAuth(request, ['feed']);
+  if (!authResult.authorized) return authResult.errorResponse;
+
   try {
     const body = await request.json();
     const name = String(body?.name || '').trim();

@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getErrorUserId, setErrorUserId, parseErrorUserId } from '../../../../../../../lib/feed-settings-db.js';
+import { withPanelAuth } from '../../../../../../../lib/api-auth.js';
 
-export async function GET() {
+export async function GET(request) {
+  const authResult = await withPanelAuth(request, ['leader']);
+  if (!authResult.authorized) return authResult.errorResponse;
+
   try {
     const id = await getErrorUserId();
     return NextResponse.json({ id });
@@ -11,6 +15,9 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const authResult = await withPanelAuth(request, ['leader']);
+  if (!authResult.authorized) return authResult.errorResponse;
+
   try {
     const body = await request.json().catch(() => ({}));
     const raw = body?.id ?? body?.url ?? '';

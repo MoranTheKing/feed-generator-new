@@ -9,7 +9,7 @@ export default function PanelLogin() {
 
   // Shared helper to fetch panels for a given access code
   const getPanelsForCode = async (codeToCheck) => {
-    const res = await fetch('/api/panel/admin/access/get');
+    const res = await fetch('/api/auth/access');
     if (!res.ok) throw new Error('Failed to load access list');
     const data = await res.json();
     const found = data.find(item => item.code === codeToCheck);

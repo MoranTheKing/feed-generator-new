@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { authenticatedFetch } from "../../../../lib/api-client.js";
 import {
   DndContext,
   closestCenter,
@@ -90,7 +91,7 @@ export default function CreditsAdmin() {
   );
 
   useEffect(() => {
-    fetch(CREDITS_PATH)
+    authenticatedFetch(CREDITS_PATH)
       .then((res) => res.json())
       .then((data) => {
         setCredits(data);
@@ -153,7 +154,7 @@ export default function CreditsAdmin() {
   };
 
   const saveCredits = async (data) => {
-  await fetch("/api/panel/admin/credits/save", {
+  await authenticatedFetch("/api/panel/admin/credits/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

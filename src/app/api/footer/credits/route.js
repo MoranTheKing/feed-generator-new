@@ -1,11 +1,8 @@
-import { getCreditsList } from '../../../../../../../lib/credits-db.js';
-import { withPanelAuth } from '../../../../../../../lib/api-auth.js';
+import { getCreditsList } from '../../../../../lib/credits-db.js';
 export const runtime = 'nodejs';
 
-export async function GET(request) {
-  const authResult = await withPanelAuth(request, ['admin']);
-  if (!authResult.authorized) return authResult.errorResponse;
-
+// Public API for footer credits
+export async function GET() {
   try {
     const rows = await getCreditsList();
     return new Response(JSON.stringify(rows), { status: 200, headers: { 'Content-Type': 'application/json' } });

@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getActiveTemplate, setActiveTemplate } from '../../../../../../lib/bbcode-templates-db.js';
+import { withPanelAuth } from '../../../../../../lib/api-auth.js';
 
 // GET /api/bbcode/templates/active - get current active template (full)
-export async function GET() {
+export async function GET(request) {
+  // Allow public read access to active template for feed generator
+  // No authentication required for this endpoint
   try {
     const tpl = await getActiveTemplate();
     return NextResponse.json(tpl || null);
@@ -14,6 +17,9 @@ export async function GET() {
 
 // POST /api/bbcode/templates/active - set active template
 export async function POST(request) {
+  const authResult = await withPanelAuth(request, ['feed']);
+  if (!authResult.authorized) return authResult.errorResponse;
+
   try {
     const body = await request.json();
     const id = Number(body?.id);

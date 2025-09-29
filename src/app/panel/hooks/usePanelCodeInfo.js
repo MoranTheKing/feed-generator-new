@@ -8,7 +8,7 @@ export default function usePanelCodeInfo() {
     if (!code) return;
     (async () => {
       try {
-        const res = await fetch('/api/panel/admin/access/get');
+        const res = await fetch('/api/auth/access');
         const data = await res.json();
         const found = data.find(item => item.code === code);
         setInfo(found || null);

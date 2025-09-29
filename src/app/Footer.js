@@ -7,7 +7,7 @@ export default function Footer() {
   useEffect(() => {
     const fetchCredits = async () => {
       try {
-        const res = await fetch('/api/panel/admin/credits/get');
+        const res = await fetch('/api/footer/credits');
         const data = await res.json();
         setCredits(data);
       } catch (err) {

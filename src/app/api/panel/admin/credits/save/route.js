@@ -1,8 +1,12 @@
 import { addCredit } from '../../../../../../../lib/credits-db.js';
 import { pool } from '../../../../../../../lib/db.js';
+import { withPanelAuth } from '../../../../../../../lib/api-auth.js';
 export const runtime = 'nodejs';
 
 export async function POST(request) {
+  const authResult = await withPanelAuth(request, ['admin']);
+  if (!authResult.authorized) return authResult.errorResponse;
+
   try {
     const credits = await request.json();
     if (!Array.isArray(credits)) {

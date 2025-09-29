@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import PanelFrame from "../../PanelFrame";
 import usePanelCodeInfo from "../../hooks/usePanelCodeInfo";
 import PanelButton from "../../hooks/PanelButton";
+import { authenticatedFetch } from "../../../../../lib/api-client.js";
 
 import {
   GLOBAL_PLACEHOLDERS,
@@ -56,7 +57,7 @@ export default function TemplatesManagerPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/bbcode/templates", { cache: "no-store" });
+        const res = await authenticatedFetch("/api/bbcode/templates", { cache: "no-store" });
         const data = await res.json();
         setList(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -71,7 +72,7 @@ export default function TemplatesManagerPage() {
     setSelectedId(id);
     setMode("edit");
     try {
-      const res = await fetch(`/api/bbcode/templates/${id}`);
+      const res = await authenticatedFetch(`/api/bbcode/templates/${id}`);
       const data = await res.json();
       if (!data || data.error) throw new Error("not found");
       setEditing({ id: data.id, name: data.name || "", content: data.content || "" });
@@ -101,7 +102,7 @@ export default function TemplatesManagerPage() {
       const url = editing.id
         ? `/api/bbcode/templates/${editing.id}`
         : "/api/bbcode/templates";
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editing.name.trim(), content: editing.content }),
@@ -113,7 +114,7 @@ export default function TemplatesManagerPage() {
         return;
       }
       // refresh list
-      const resList = await fetch("/api/bbcode/templates", { cache: "no-store" });
+      const resList = await authenticatedFetch("/api/bbcode/templates", { cache: "no-store" });
       const nextList = await resList.json();
       setList(Array.isArray(nextList) ? nextList : []);
       alert("נשמר בהצלחה");
@@ -132,7 +133,7 @@ export default function TemplatesManagerPage() {
     if (!id) return;
     if (!confirm("בטוח למחוק את התבנית?")) return;
     try {
-      const res = await fetch(`/api/bbcode/templates/${id}`, { method: "DELETE" });
+      const res = await authenticatedFetch(`/api/bbcode/templates/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) {
         const msg = data?.error || "שגיאה במחיקה";
@@ -140,7 +141,7 @@ export default function TemplatesManagerPage() {
         return;
       }
       // refresh
-      const resList = await fetch("/api/bbcode/templates", { cache: "no-store" });
+      const resList = await authenticatedFetch("/api/bbcode/templates", { cache: "no-store" });
       const nextList = await resList.json();
       setList(Array.isArray(nextList) ? nextList : []);
       if (selectedId === id) onCancel();
@@ -152,7 +153,7 @@ export default function TemplatesManagerPage() {
 
   const onSetActive = async (id) => {
     try {
-      const res = await fetch("/api/bbcode/templates/active", {
+      const res = await authenticatedFetch("/api/bbcode/templates/active", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -164,7 +165,7 @@ export default function TemplatesManagerPage() {
         return;
       }
       // refresh
-      const resList = await fetch("/api/bbcode/templates", { cache: "no-store" });
+      const resList = await authenticatedFetch("/api/bbcode/templates", { cache: "no-store" });
       const nextList = await resList.json();
       setList(Array.isArray(nextList) ? nextList : []);
       alert("עודכן כתבנית פעילה");
@@ -221,7 +222,7 @@ export default function TemplatesManagerPage() {
                         מחק
                       </PanelButton>
                     ) : (
-                      <PanelButton className="bg-gray-500 cursor-not-allowed w-[200px]" disabled>
+                      <PanelButton className="bg-gray-500 cursor-not-allowed w-[200px]" disabled title="לא ניתן למחוק את התבנית הפעילה!">
                         לא ניתן למחוק
                       </PanelButton>
                     )}

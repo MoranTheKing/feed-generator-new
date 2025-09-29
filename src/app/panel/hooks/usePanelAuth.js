@@ -39,7 +39,7 @@ export default function usePanelAuth(options = {}) {
 
     (async () => {
       try {
-        const res = await fetch("/api/panel/admin/access/get");
+        const res = await fetch("/api/auth/access");
         if (!res.ok) throw new Error("access get failed");
         const data = await res.json();
         const found = data.find((item) => item.code === code);

@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getTemplate, updateTemplate, deleteTemplate } from '../../../../../../lib/bbcode-templates-db.js';
+import { withPanelAuth } from '../../../../../../lib/api-auth.js';
 
 // GET /api/bbcode/templates/[id] - get one template (full)
-export async function GET(_request, { params }) {
+export async function GET(request, { params }) {
+  // Allow public read access for feed generator
+  // No authentication required for this endpoint
   try {
-    const id = Number(await params?.id);
+    const id = Number(params?.id);
     if (!id) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
     const tpl = await getTemplate(id);
@@ -19,8 +22,11 @@ export async function GET(_request, { params }) {
 
 // PUT /api/bbcode/templates/[id] - update name/content
 export async function PUT(request, { params }) {
+  const authResult = await withPanelAuth(request, ['feed']);
+  if (!authResult.authorized) return authResult.errorResponse;
+
   try {
-    const id = Number(await params?.id);
+    const id = Number(params?.id);
     if (!id) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
     const body = await request.json();
@@ -45,9 +51,12 @@ export async function PUT(request, { params }) {
 }
 
 // DELETE /api/bbcode/templates/[id]
-export async function DELETE(_request, { params }) {
+export async function DELETE(request, { params }) {
+  const authResult = await withPanelAuth(request, ['feed']);
+  if (!authResult.authorized) return authResult.errorResponse;
+
   try {
-    const id = Number(await params?.id);
+    const id = Number(params?.id);
     if (!id) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
     const ok = await deleteTemplate(id);
