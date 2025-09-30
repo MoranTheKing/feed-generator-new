@@ -1,3 +1,5 @@
+import AuthWrapper from "../hooks/AuthWrapper";
+
 export const metadata = {
   title: "לוח בקרה – ראש צוות פיד",
   description: "לוח הבקרה לראש צוות פיד",
