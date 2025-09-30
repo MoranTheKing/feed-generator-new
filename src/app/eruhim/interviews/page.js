@@ -1,10 +1,12 @@
 "use client";
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import depts from "public/dept-config.json";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import BackButtons from "../../BackButtons";
+import { bbcodeToHtml } from "../../../../lib/interview-preview.js";
 
 // --- קומפוננטת עורך BBCode (ללא שינוי) ---
 const BbCodeEditor = ({ content, setContent }) => {
@@ -94,7 +96,10 @@ const SortableItem = ({ item, children }) => {
 };
 
 // --- קומפוננטה ראשית למחולל ---
-export default function EruhimGenerator() {
+function EruhimGenerator() {
+    const searchParams = useSearchParams();
+    const templateId = searchParams?.get('template');
+
     const [guestName, setGuestName] = useState('');
     const [guestTopic, setGuestTopic] = useState('');
     const [biography, setBiography] = useState('');
@@ -103,6 +108,8 @@ export default function EruhimGenerator() {
     const [generatedBBcode, setBBcode] = useState('');
     const [previewContent, setPreviewContent] = useState('');
     const [isClient, setIsClient] = useState(false);
+    const [currentTemplate, setCurrentTemplate] = useState(null);
+    const [templateError, setTemplateError] = useState('');
 
     useEffect(() => {
         setIsClient(true);
@@ -117,29 +124,127 @@ export default function EruhimGenerator() {
         })
     );
 
+    // --- Load interview template (DB) ---
+    useEffect(() => {
+        (async () => {
+            try {
+                let tpl = null;
+                if (templateId) {
+                    const res = await fetch(`/api/eruhim/templates/${templateId}`, { cache: 'no-store' });
+                    if (res.ok) tpl = await res.json();
+                    else {
+                        setTemplateError(`תבנית עם ID ${templateId} לא נמצאה`);
+                        setCurrentTemplate(null);
+                        return;
+                    }
+                } else {
+                    const res = await fetch('/api/eruhim/templates/active', { cache: 'no-store' });
+                    if (res.ok) tpl = await res.json();
+                }
+                if (tpl && (tpl.content || tpl.qa_content)) {
+                    setCurrentTemplate(tpl);
+                    setTemplateError('');
+                } else {
+                    setCurrentTemplate(null);
+                    setTemplateError('');
+                }
+            } catch (e) {
+                console.error('Error loading interview template:', e);
+                setCurrentTemplate(null);
+                setTemplateError('');
+            }
+        })();
+    }, [templateId]);
+
+    // Helper: apply interview IF blocks on BBCode template
+    const applyInterviewIfBlocks = (template, { guestTopicVal, biographyVal, qnaBlockVal }) => {
+        if (!template) return '';
+        let out = template;
+        const conditions = {
+            GUEST_TOPIC: !!(guestTopicVal && String(guestTopicVal).trim()),
+            BIOGRAPHY: !!(biographyVal && String(biographyVal).trim()),
+            QNA_BLOCK: !!(qnaBlockVal && String(qnaBlockVal).trim()),
+        };
+        ['GUEST_TOPIC', 'BIOGRAPHY', 'QNA_BLOCK'].forEach((block) => {
+            const re = new RegExp(`%IF_${block}_START%([\s\S]*?)%IF_${block}_END%`, 'g');
+            out = out.replace(re, (_full, inner) => (conditions[block] ? inner : ''));
+        });
+        return out;
+    };
+
+    // Helper: replace both {Name} and %Name% in BBCode
+    const replaceBoth = (text, name, value) => {
+        if (text == null) return '';
+        let t = String(text);
+        const val = value != null ? String(value) : '';
+        t = t.replace(new RegExp(`\\{${name}\\}`, 'g'), val);
+        t = t.replace(new RegExp(`%${name}%`, 'g'), val);
+        return t;
+    };
+
     useEffect(() => {
         const generateOutputs = async () => {
-        const deptConfig = depts["eruhim"]?.interviews;
+            const deptConfig = depts["eruhim"]?.interviews;
             if (!deptConfig) return;
 
-            // --- Generate Content Blocks ---
+            // If we have a DB-backed template, prefer it
+            if (currentTemplate && (currentTemplate.content || currentTemplate.qa_content)) {
+                // Build Q&A BBCode block (Q&A items via qa template, images as [IMG])
+                let questionCounter = 0;
+                const qaTpl = currentTemplate.qa_content || '[B]%Question%[/B]\n%Answer%';
+                const qnaParts = blocks.map(block => {
+                    if (block.type === 'qna') {
+                        questionCounter++;
+                        return qaTpl
+                            .replace(/%Question%/g, `שאלה ${questionCounter}: ${block.question || ''}`)
+                            .replace(/%Answer%/g, block.answer || '');
+                    }
+                    if (block.type === 'image' && block.url) {
+                        return `[IMG]${block.url}[/IMG]`;
+                    }
+                    return '';
+                }).filter(Boolean);
+                const qnaBbcodeBlock = qnaParts.join('\n\n');
+
+                // Apply on main template
+                let main = String(currentTemplate.content || '');
+                // IF blocks
+                main = applyInterviewIfBlocks(main, {
+                    guestTopicVal: guestTopic,
+                    biographyVal: biography,
+                    qnaBlockVal: qnaBbcodeBlock,
+                });
+                // Insert Q&A block
+                main = main.replace(/\{QNA_BLOCK\}/g, qnaBbcodeBlock);
+                // Placeholders
+                main = replaceBoth(main, 'GuestName', guestName || '');
+                main = replaceBoth(main, 'GuestTopic', guestTopic || '');
+                main = replaceBoth(main, 'Biography', biography || '');
+
+                // Outputs
+                setBBcode(main);
+                setGeneratedHtml(bbcodeToHtml(main));
+                setPreviewContent(bbcodeToHtml(main));
+                return;
+            }
+
+            // --- Legacy fallback using public templates (Hebrew placeholders) ---
+            // Generate Content Blocks for preview (HTML)
             let qnaHtmlBlock = '';
             let qnaBbcodeBlock = '';
             let questionCounter = 0;
 
-            // --- THIS IS THE RESTORED/FIXED LOGIC FOR HTML Q&A ---
             if (deptConfig.qatemplate) {
                 try {
                     const qaTemplateResponse = await fetch(deptConfig.qatemplate);
                     if (!qaTemplateResponse.ok) throw new Error('קובץ תבנית QA ל-HTML לא נמצא');
                     const qaTemplateText = await qaTemplateResponse.text();
-                    
                     qnaHtmlBlock = blocks.map(block => {
                         if (block.type === 'qna') {
                             questionCounter++;
                             return qaTemplateText
                                 .replace(/%Question%/g, `שאלה ${questionCounter}: ${block.question}`)
-                                .replace(/%Answer%/g, block.answer.replace(/\n/g, '<br />'));
+                                .replace(/%Answer%/g, (block.answer || '').replace(/\n/g, '<br />'));
                         }
                         if (block.type === 'image') {
                             return `<img src="${block.url}" style="max-width: 100%; margin: 15px auto; display: block;" />`;
@@ -147,24 +252,23 @@ export default function EruhimGenerator() {
                         return '';
                     }).join('');
                 } catch (e) {
-                    qnaHtmlBlock = `<p style="color:red;">שגיאה: ${e.message}</p>`;
+                    qnaHtmlBlock = `<p style=\"color:red;\">שגיאה: ${e.message}</p>`;
                 }
             }
-            
-            // --- THIS IS THE RESTORED/FIXED LOGIC FOR BBCODE Q&A ---
+
+            // Legacy BBCode Q&A
             questionCounter = 0;
             if (deptConfig.qabbcodeTemp) {
-                 try {
+                try {
                     const qaBbcodeTemplateResponse = await fetch(deptConfig.qaBbcodeTemplate);
                     if (!qaBbcodeTemplateResponse.ok) throw new Error('קובץ תבנית QA ל-BBCODE לא נמצא');
                     const qaBbcodeTemplateText = await qaBbcodeTemplateResponse.text();
-
                     qnaBbcodeBlock = blocks.map(block => {
                         if (block.type === 'qna') {
                             questionCounter++;
                             return qaBbcodeTemplateText
                                 .replace(/%Question%/g, `שאלה ${questionCounter}: ${block.question}`)
-                                .replace(/%Answer%/g, block.answer);
+                                .replace(/%Answer%/g, block.answer || '');
                         }
                         if (block.type === 'image') {
                             return `[IMG]${block.url}[/IMG]`;
@@ -176,28 +280,36 @@ export default function EruhimGenerator() {
                 }
             }
 
-            // --- Generate Final HTML ---
+            // Final HTML
             if (deptConfig.templateFile) {
                 try {
                     const htmlResponse = await fetch(deptConfig.templateFile);
                     if (!htmlResponse.ok) throw new Error(`לא נמצא קובץ תבנית HTML`);
                     let htmlTemplate = await htmlResponse.text();
-                    htmlTemplate = htmlTemplate.replace(/{שם המתארח}/g, guestName).replace(/{עיסוק\/תחום עניין}/g, guestTopic).replace(/{ביוגרפיה}/g, biography.replace(/\n/g, '<br />')).replace(/{QNA_BLOCK}/g, qnaHtmlBlock);
+                    htmlTemplate = htmlTemplate
+                        .replace(/{שם המתארח}/g, guestName)
+                        .replace(/{עיסוק\/תחום עניין}/g, guestTopic)
+                        .replace(/{ביוגרפיה}/g, (biography || '').replace(/\n/g, '<br />'))
+                        .replace(/{QNA_BLOCK}/g, qnaHtmlBlock);
                     setGeneratedHtml(htmlTemplate);
                     setPreviewContent(htmlTemplate);
                 } catch (error) {
                     setGeneratedHtml(`שגיאה ביצירת HTML: ${error.message}`);
-                    setPreviewContent(`<p style="color:red;">${error.message}</p>`);
+                    setPreviewContent(`<p style=\"color:red;\">${error.message}</p>`);
                 }
             } else { setGeneratedHtml('לא הוגדרה תבנית HTML בקונפיג'); setPreviewContent('<p>לא הוגדרה תבנית HTML בקונפיג</p>'); }
 
-            // --- Generate Final BBCode ---
+            // Final BBCode
             if (deptConfig.bbcodeTemplateFile) {
                 try {
                     const bbcodeResponse = await fetch(deptConfig.bbcodeTemplateFile);
                     if (!bbcodeResponse.ok) throw new Error(`לא נמצא קובץ תבנית BBCODE`);
                     let bbcodeTemplate = await bbcodeResponse.text();
-                    bbcodeTemplate = bbcodeTemplate.replace(/{שם המתארח}/g, guestName).replace(/{עיסוק\/תחום עניין}/g, guestTopic).replace(/{ביוגרפיה}/g, biography).replace(/{QNA_BLOCK}/g, qnaBbcodeBlock);
+                    bbcodeTemplate = bbcodeTemplate
+                        .replace(/{שם המתארח}/g, guestName)
+                        .replace(/{עיסוק\/תחום עניין}/g, guestTopic)
+                        .replace(/{ביוגרפיה}/g, biography)
+                        .replace(/{QNA_BLOCK}/g, qnaBbcodeBlock);
                     setBBcode(bbcodeTemplate);
                 } catch (error) {
                     setBBcode(`שגיאה ביצירת BBCODE: ${error.message}`);
@@ -206,7 +318,7 @@ export default function EruhimGenerator() {
         };
 
         generateOutputs();
-    }, [guestName, guestTopic, biography, blocks]);
+    }, [guestName, guestTopic, biography, blocks, currentTemplate]);
     
     const handleBlockChange = (id, field, value) => {
         setBlocks(blocks.map(block => block.id === id ? { ...block, [field]: value } : block));
@@ -240,7 +352,24 @@ export default function EruhimGenerator() {
         <main className="flex min-h-screen flex-col items-center justify-between p-8 bg-gray-900 text-white">
             <div className="z-10 w-full max-w-7xl items-center justify-between font-mono text-sm lg:flex flex-col">
                 <BackButtons />
-                <h1 className="text-4xl font-bold mb-8">מחולל אירוחים</h1>
+                <h1 className="text-4xl font-bold mb-4">מחולל אירוחים</h1>
+                {/* Template Status */}
+                {currentTemplate ? (
+                    <div className="mb-4 p-3 bg-blue-900 rounded-lg w-full">
+                        <p className="text-sm text-blue-200">
+                            🎯 משתמש בתבנית: <strong>{currentTemplate.name}</strong>
+                            {templateId ? ` (ID: ${templateId})` : ' (פעילה)'}
+                        </p>
+                    </div>
+                ) : templateError ? (
+                    <div className="mb-4 p-3 bg-red-900 rounded-lg w-full">
+                        <p className="text-sm text-red-200">❌ {templateError} - חזר למערכת הישנה</p>
+                    </div>
+                ) : (
+                    <div className="mb-4 p-3 bg-gray-700 rounded-lg w-full">
+                        <p className="text-sm text-gray-300">📁 משתמש במערכת התבניות הישנה</p>
+                    </div>
+                )}
                 <div className="mb-6">
                 </div>
                 <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -306,5 +435,14 @@ export default function EruhimGenerator() {
                 </div>
             </div>
         </main>
+    );
+}
+
+// Wrapper for Suspense
+export default function Page() {
+    return (
+        <Suspense fallback={<div>טוען...</div>}>
+            <EruhimGenerator />
+        </Suspense>
     );
 }

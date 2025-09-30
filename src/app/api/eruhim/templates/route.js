@@ -24,13 +24,12 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const name = String(body?.name || '').trim();
-    const content = String(body?.content || '');
-
-    if (!name || !content) {
+    const rawContent = body?.content; // can be string or { content, qa_content }
+    if (!name || (!rawContent && rawContent !== '')) {
       return NextResponse.json({ error: 'Name and content are required' }, { status: 400 });
     }
 
-    const created = await createTemplate(name, content, 'eruhim_interviews');
+    const created = await createTemplate(name, rawContent, 'eruhim_interviews');
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
     // Handle duplicate name (ER_DUP_ENTRY)

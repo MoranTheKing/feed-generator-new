@@ -31,13 +31,13 @@ export async function PUT(request, { params }) {
 
     const body = await request.json();
     const name = String(body?.name || '').trim();
-    const content = String(body?.content || '');
+    const rawContent = body?.content; // can be string or { content, qa_content }
 
-    if (!name || !content) {
+    if (!name || (!rawContent && rawContent !== '')) {
       return NextResponse.json({ error: 'Name and content are required' }, { status: 400 });
     }
 
-    const updated = await updateTemplate(id, name, content, 'eruhim_interviews');
+    const updated = await updateTemplate(id, name, rawContent, 'eruhim_interviews');
     if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     return NextResponse.json(updated);

@@ -73,7 +73,7 @@ export default function InterviewTemplatesManagerPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await authenticatedFetch("/api/eruhim/templates/templates", { cache: "no-store" });
+        const res = await authenticatedFetch("/api/eruhim/templates", { cache: "no-store" });
         const data = await res.json();
         setList(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -88,7 +88,7 @@ export default function InterviewTemplatesManagerPage() {
     setSelectedId(id);
     setMode("edit");
     try {
-      const res = await authenticatedFetch(`/api/eruhim/templates/templates/${id}`);
+  const res = await authenticatedFetch(`/api/eruhim/templates/${id}`);
       const data = await res.json();
       if (!data || data.error) throw new Error("not found");
       setEditing({ 
@@ -121,8 +121,8 @@ export default function InterviewTemplatesManagerPage() {
     try {
       const method = editing.id ? "PUT" : "POST";
       const url = editing.id
-        ? `/api/eruhim/templates/templates/${editing.id}`
-        : "/api/eruhim/templates/templates";
+        ? `/api/eruhim/templates/${editing.id}`
+        : "/api/eruhim/templates";
       
       const requestBody = {
         name: editing.name.trim(),
@@ -144,7 +144,7 @@ export default function InterviewTemplatesManagerPage() {
         return;
       }
       // refresh list
-      const resList = await authenticatedFetch("/api/eruhim/templates/templates", { cache: "no-store" });
+  const resList = await authenticatedFetch("/api/eruhim/templates", { cache: "no-store" });
       const nextList = await resList.json();
       setList(Array.isArray(nextList) ? nextList : []);
       alert("נשמר בהצלחה");
@@ -163,7 +163,7 @@ export default function InterviewTemplatesManagerPage() {
     if (!id) return;
     if (!confirm("בטוח למחוק את התבנית?")) return;
     try {
-      const res = await authenticatedFetch(`/api/eruhim/templates/templates/${id}`, { method: "DELETE" });
+  const res = await authenticatedFetch(`/api/eruhim/templates/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) {
         const msg = data?.error || "שגיאה במחיקה";
@@ -171,7 +171,7 @@ export default function InterviewTemplatesManagerPage() {
         return;
       }
       // refresh
-      const resList = await authenticatedFetch("/api/eruhim/templates/templates", { cache: "no-store" });
+  const resList = await authenticatedFetch("/api/eruhim/templates", { cache: "no-store" });
       const nextList = await resList.json();
       setList(Array.isArray(nextList) ? nextList : []);
       if (selectedId === id) onCancel();
@@ -183,7 +183,7 @@ export default function InterviewTemplatesManagerPage() {
 
   const onSetActive = async (id) => {
     try {
-      const res = await authenticatedFetch("/api/eruhim/templates/templates/active", {
+  const res = await authenticatedFetch("/api/eruhim/templates/active", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -195,7 +195,7 @@ export default function InterviewTemplatesManagerPage() {
         return;
       }
       // refresh
-      const resList = await authenticatedFetch("/api/eruhim/templates/templates", { cache: "no-store" });
+  const resList = await authenticatedFetch("/api/eruhim/templates", { cache: "no-store" });
       const nextList = await resList.json();
       setList(Array.isArray(nextList) ? nextList : []);
       alert("עודכן כתבנית פעילה");
